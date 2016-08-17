@@ -2,7 +2,6 @@
 //     Copyright (c) Mewzor Holdings Inc. All rights reserved.
 // </copyright>
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -17,6 +16,8 @@ public class ActivityLog : MonoBehaviour
     private List<LogEntry> messages;
     
     private System.Text.StringBuilder builder;
+
+    private string text = string.Empty;
     
     public void Append(LogEntry entry)
     {
@@ -35,7 +36,6 @@ public class ActivityLog : MonoBehaviour
     /// </summary>
     private void Awake()
     {
-        builder = new System.Text.StringBuilder();
         messages = new List<LogEntry>();
     }
 
@@ -44,7 +44,7 @@ public class ActivityLog : MonoBehaviour
     /// </summary>
     private void OnGUI()
     {
-        GUI.Box(new Rect(0, Screen.height - 200, 600, 200), builder.ToString(), Style);
+        GUI.Box(new Rect(0, Screen.height - 200, 600, 200), text, Style);
     }
     #endregion
 
@@ -64,5 +64,7 @@ public class ActivityLog : MonoBehaviour
         {
             builder.AppendLine(messages[i].ToString());
         }
+
+        text = builder.ToString();
     }
 }
