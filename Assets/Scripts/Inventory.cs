@@ -11,7 +11,7 @@ using System.Linq;
 public class Inventory
 {
     /// <summary>
-    /// Initializes Inventory
+    /// Initializes a new instance of the <see cref="Inventory" /> class. 
     /// </summary>
     public Inventory()
     {

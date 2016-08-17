@@ -11,8 +11,11 @@ public class ItemBlueprint
 {
     [PrimaryKey, AutoIncrement]
     public int Id { get; set; }
+
     public string Name { get; set; }
+
     public int Value { get; set; }
+
     public float Weight { get; set; }
     
     public override string ToString()

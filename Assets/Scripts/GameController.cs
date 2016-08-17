@@ -66,6 +66,7 @@ public class GameController : MonoBehaviour
             // Register our Agent as ready
             map.Agents.Add(agent);
         }
+
         log.Append(string.Format("{0} Agents created, Simulating Economy...", map.Agents.Count));
     }
     #endregion

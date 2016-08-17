@@ -1,12 +1,12 @@
 ﻿// <copyright file="Database.cs" company="Mewzor Holdings Inc.">
 //     Copyright (c) Mewzor Holdings Inc. All rights reserved.
 // </copyright>
-using SQLite4Unity3d;
-
 #if UNITY_EDITOR
 using System.Collections;
 using System.IO;
 #endif
+
+using SQLite4Unity3d;
 
 /// <summary>
 /// 
@@ -16,19 +16,19 @@ public class Database
 {
     private SQLiteConnection connection;
 
-    public static SQLiteConnection GetConnection(string DatabaseName)
+    public static SQLiteConnection GetConnection(string databaseName)
     {
 #if UNITY_EDITOR
-        var dbPath = string.Format(@"Assets/StreamingAssets/{0}", DatabaseName);
+        var dbPath = string.Format(@"Assets/StreamingAssets/{0}", databaseName);
 #else
         // check if file exists in Application.persistentDataPath
-        var filepath = string.Format("{0}/{1}", Application.persistentDataPath, DatabaseName);
+        var filepath = string.Format("{0}/{1}", Application.persistentDataPath, databaseName);
 
         if (!File.Exists(filepath))
         {
             Debug.Log("Database not in Persistent path");
             
-	        var loadDb = Application.dataPath + "/StreamingAssets/" + DatabaseName;
+	        var loadDb = Application.dataPath + "/StreamingAssets/" + databaseName;
             
 	        // then save to Application.persistentDataPath
 	        File.Copy(loadDb, filepath);
