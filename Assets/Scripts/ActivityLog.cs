@@ -3,6 +3,7 @@
 // </copyright>
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// 
@@ -11,23 +12,24 @@ using UnityEngine;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class ActivityLog : MonoBehaviour
 {
-    public GUIStyle Style;
+    public Text Text;
 
-    private List<LogEntry> messages;
+    [Range(3, 30)]
+    public int MessagesToShow;
+
+    private List<LogEntry> entries;
     
     private System.Text.StringBuilder builder;
-
-    private string text = string.Empty;
     
     public void Append(LogEntry entry)
     {
-        messages.Add(entry);
+        entries.Add(entry);
     }
 
     public void Append(string message)
     {
         Append(new LogEntry(message));
-        RegenerateLog();
+        UpdateLog();
     }
 
     #region Unity
@@ -36,35 +38,27 @@ public class ActivityLog : MonoBehaviour
     /// </summary>
     private void Awake()
     {
-        messages = new List<LogEntry>();
-    }
-
-    /// <summary>
-    /// show the activity log across the bottom of the screen
-    /// </summary>
-    private void OnGUI()
-    {
-        GUI.Box(new Rect(0, Screen.height - 200, 600, 200), text, Style);
+        entries = new List<LogEntry>();
     }
     #endregion
 
-    private void RegenerateLog()
+    private void UpdateLog()
     {
         builder = new System.Text.StringBuilder();
 
-        // Fetch at most, the last ten messages.
-        int start = messages.Count - 8;
+        // Fetch at most, the last few messages.
+        int start = entries.Count - MessagesToShow;
         if (start < 0)
         {
             start = 0;
         }
 
         // Put them into the string Builder
-        for (int i = start; i < messages.Count; i++)
+        for (int i = start; i < entries.Count; i++)
         {
-            builder.AppendLine(messages[i].ToString());
+            builder.AppendLine(entries[i].ToString());
         }
 
-        text = builder.ToString();
+        Text.text = builder.ToString();
     }
 }
