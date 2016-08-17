@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
-/// 
+/// represents a collection of \ref Item held by an \ref Agent
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class Inventory
@@ -18,10 +18,13 @@ public class Inventory
         Items = new List<Item>();
     }
 
+    /// <summary>
+    /// Gets list of items we hold
+    /// </summary>
     public List<Item> Items { get; private set; }
 
     /// <summary>
-    /// shortcut to add one
+    /// shortcut to add one by name
     /// </summary>
     /// <param name="name">item to add</param>
     public void Add(string name)
@@ -30,7 +33,7 @@ public class Inventory
     }
     
     /// <summary>
-    /// adds item by name
+    /// adds one or many by name
     /// </summary>
     /// <param name="name">item to add</param>
     /// <param name="quantity">amount to add</param>
@@ -50,7 +53,7 @@ public class Inventory
     }
 
     /// <summary>
-    /// finds item by name
+    /// search by name
     /// </summary>
     /// <param name="name">item to find</param>
     /// <returns>found item on success ; null on failure</returns>

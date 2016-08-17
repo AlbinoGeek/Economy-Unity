@@ -7,7 +7,7 @@ using System.Linq;
 using UnityEngine;
 
 /// <summary>
-/// 
+/// represents a member of the economy
 /// </summary>
 [DisallowMultipleComponent]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
@@ -28,10 +28,16 @@ public class Agent : MonoBehaviour
     /// </summary>
     private int health;
 
+    /// <summary>
+    /// reference to activity log
+    /// </summary>
     private ActivityLog log;
     
     private MapController map;
     
+    /// <summary>
+    /// Gets a value indicating whether we will trade or loot
+    /// </summary>
     public bool Alive
     {
         get
@@ -40,6 +46,9 @@ public class Agent : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Gets our current status, if less than 1 ! \ref Alive
+    /// </summary>
     public int Health
     {
         get
@@ -50,12 +59,24 @@ public class Agent : MonoBehaviour
 
     public Vector3 Destination { get; private set; }
 
+    /// <summary>
+    /// Gets Time.timeSinceLevelLoad when we were created
+    /// </summary>
     public float BirthTime { get; private set; }
 
+    /// <summary>
+    /// Gets Time.timeSinceLevelLoad when we died
+    /// </summary>
     public float DeathTime { get; private set; }
 
+    /// <summary>
+    /// Gets Time.timeSinceLevelLoad of our last action
+    /// </summary>
     public float LastActionTime { get; private set; }
 
+    /// <summary>
+    /// Gets reference to the items we hold
+    /// </summary>
     internal Inventory inventory { get; private set; }
 
     /// <summary>
@@ -138,7 +159,6 @@ public class Agent : MonoBehaviour
         // Consume food to compensate
         if (calories < 50)
         {
-            Item item = inventory.Find("Bread");
             if (inventory.Remove("Bread", 1))
             {
                 calories += 50;
@@ -148,7 +168,6 @@ public class Agent : MonoBehaviour
         // Consume water to compensate
         if (hydration < 50)
         {
-            Item item = inventory.Find("Water");
             if (inventory.Remove("Water", 1))
             {
                 hydration += 50;
@@ -192,9 +211,9 @@ public class Agent : MonoBehaviour
             Agent other = nearbyAgents.ElementAt(i);
 
             // Check if body has already been looted
-            if (null == other.inventory.Find("Money") &&
-                null == other.inventory.Find("Bread") &&
-                null == other.inventory.Find("Water"))
+            if (other.inventory.Find("Money") == null &&
+                other.inventory.Find("Bread") == null &&
+                other.inventory.Find("Water") == null)
             {
                 continue;
             }
@@ -220,7 +239,7 @@ public class Agent : MonoBehaviour
     private void Trade(IEnumerable<Agent> nearbyAgents)
     {
         // If we have run out of money stop trading
-        if (null == inventory.Find("Money"))
+        if (inventory.Find("Money") == null)
         {
             return;
         }
@@ -234,7 +253,7 @@ public class Agent : MonoBehaviour
             for (int j = 0; j < tradable.Length; j++)
             {
                 // If we have run out of money stop trading
-                if (null == inventory.Find("Money"))
+                if (inventory.Find("Money") == null)
                 {
                     return;
                 }
@@ -242,8 +261,8 @@ public class Agent : MonoBehaviour
                 Item ours = inventory.Find(tradable[j]);
                 Item theirs = other.inventory.Find(tradable[j]);
 
-                if (null != ours &&
-                    null != theirs &&
+                if (ours != null &&
+                    theirs != null &&
                     ours.Quantity < 10 &&
                     theirs.Quantity > 10)
                 {

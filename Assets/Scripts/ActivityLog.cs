@@ -6,14 +6,20 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 
+/// handles displaying recent activity messages on the screen
 /// </summary>
 [DisallowMultipleComponent]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class ActivityLog : MonoBehaviour
 {
+    /// <summary>
+    /// Canvas Text component set in Unity Editor
+    /// </summary>
     public Text Text;
 
+    /// <summary>
+    /// amount of recent messages to show
+    /// </summary>
     [Range(3, 30)]
     public int MessagesToShow;
 
@@ -21,11 +27,19 @@ public class ActivityLog : MonoBehaviour
     
     private System.Text.StringBuilder builder;
     
+    /// <summary>
+    /// adds a new message to \ref entries
+    /// </summary>
+    /// <param name="entry">log to add</param>
     public void Append(LogEntry entry)
     {
         entries.Add(entry);
     }
 
+    /// <summary>
+    /// helper method creates a LogEntry \see Append
+    /// </summary>
+    /// <param name="message">description log to create</param>
     public void Append(string message)
     {
         Append(new LogEntry(message));

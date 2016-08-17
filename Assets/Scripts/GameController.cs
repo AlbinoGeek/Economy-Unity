@@ -4,12 +4,15 @@
 using UnityEngine;
 
 /// <summary>
-/// 
+/// handles the flow logic of the game
 /// </summary>
 [DisallowMultipleComponent]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class GameController : MonoBehaviour
 {
+    /// <summary>
+    /// list of players to be created at the start of the game
+    /// </summary>
     private static string[] population =
     {
         "AngryAlbino",
@@ -41,13 +44,15 @@ public class GameController : MonoBehaviour
     /// </summary>
     private void Awake()
     {
+        log = GameObject.Find("Activity").GetComponent<ActivityLog>();
         map = GameObject.Find("Map").GetComponent<MapController>();
     }
 
+    /// <summary>
+    /// beings a game, initializing things as required
+    /// </summary>
     private void Start()
     {
-        log = GameObject.Find("Activity").GetComponent<ActivityLog>();
-
         GameObject agentContainer = new GameObject("Agents");
         foreach (string name in population)
         {

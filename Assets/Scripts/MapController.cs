@@ -12,9 +12,19 @@ using UnityEngine;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class MapController : MonoBehaviour
 {
+    /// <summary>
+    /// horizontal (width) length
+    /// </summary>
     public int XSize;
+
+    /// <summary>
+    /// vertical (depth) length
+    /// </summary>
     public int YSize;
 
+    /// <summary>
+    /// whether we have run \ref Generate yet
+    /// </summary>
     private bool initialized;
 
     internal List<Agent> Agents { get; private set; }
