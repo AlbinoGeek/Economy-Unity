@@ -2,7 +2,7 @@
 //     Copyright (c) Mewzor Holdings Inc. All rights reserved.
 // </copyright>
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -14,12 +14,19 @@ public class ActivityLog : MonoBehaviour
 {
     public GUIStyle Style;
 
-    private MapController map;
-    private List<string> messages;
+    private List<LogEntry> messages;
+    
+    private System.Text.StringBuilder builder;
+    
+    public void Append(LogEntry entry)
+    {
+        messages.Add(entry);
+    }
 
     public void Append(string message)
     {
-        messages.Add(message);
+        Append(new LogEntry(message));
+        RegenerateLog();
     }
 
     #region Unity
@@ -28,8 +35,8 @@ public class ActivityLog : MonoBehaviour
     /// </summary>
     private void Awake()
     {
-        map = GameObject.Find("Map").GetComponent<MapController>();
-        messages = new List<string>();
+        builder = new System.Text.StringBuilder();
+        messages = new List<LogEntry>();
     }
 
     /// <summary>
@@ -37,22 +44,25 @@ public class ActivityLog : MonoBehaviour
     /// </summary>
     private void OnGUI()
     {
-        StringBuilder sb = new StringBuilder();
-        int count = 0;
-
-        // TODO(Albino) The building should not be done inside OnGUI!
-        for (int i = messages.Count - 1; i >= 0; i--)
-        {
-            sb.AppendLine(messages[i]);
-            count++;
-
-            if (count > 6)
-            {
-                break;
-            }
-        }
-
-        GUI.Box(new Rect(0, Screen.height - 200, 600, 200), sb.ToString(), Style);
+        GUI.Box(new Rect(0, Screen.height - 200, 600, 200), builder.ToString(), Style);
     }
     #endregion
+
+    private void RegenerateLog()
+    {
+        builder = new System.Text.StringBuilder();
+
+        // Fetch at most, the last ten messages.
+        int start = messages.Count - 8;
+        if (start < 0)
+        {
+            start = 0;
+        }
+
+        // Put them into the string Builder
+        for (int i = start; i < messages.Count; i++)
+        {
+            builder.AppendLine(messages[i].ToString());
+        }
+    }
 }
