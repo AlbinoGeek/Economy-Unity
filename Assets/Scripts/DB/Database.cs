@@ -1,9 +1,13 @@
 ﻿// <copyright file="Database.cs" company="Mewzor Holdings Inc.">
 //     Copyright (c) Mewzor Holdings Inc. All rights reserved.
 // </copyright>
+using UnityEngine;
+
+using System;
+using System.IO;
+
 #if UNITY_EDITOR
 using System.Collections;
-using System.IO;
 #endif
 
 using SQLite4Unity3d;
