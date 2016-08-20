@@ -73,6 +73,6 @@ public class ActivityLog : MonoBehaviour
             builder.AppendLine(entries[i].ToString());
         }
 
-        Text.text = builder.ToString();
+        Text.text = builder.ToString().TrimEnd('\n');
     }
 }
