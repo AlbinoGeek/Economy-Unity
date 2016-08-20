@@ -8,7 +8,6 @@ using UnityEngine;
 /// 
 /// </summary>
 [DisallowMultipleComponent]
-[ExecuteInEditMode]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class MapController : MonoBehaviour
 {
@@ -29,6 +28,8 @@ public class MapController : MonoBehaviour
     
     // TODO(Albino) This really should be private, but we need it elsewhere
     public List<Agent> Agents { get; private set; }
+
+    internal List<Provider> Providers { get; private set; }
     
     private MapTile[][] map;
     
@@ -80,10 +81,59 @@ public class MapController : MonoBehaviour
     private void Awake()
     {
         Agents = new List<Agent>();
+        Providers = new List<Provider>();
         if (!initialized)
         {
             Generate();
         }
+    }
+    
+    /// <summary>
+    /// builds the physical map based on \ref this.map
+    /// </summary>
+    private void Start()
+    {
+        // Draw the structure and shape of the map
+        string tileName;
+        for (int y = 0; y < YSize; y++)
+        {
+            for (int x = 0; x < XSize; x++)
+            {
+                tileName = string.Empty;
+
+                switch (this.map[x][y])
+                {
+                    case MapTile.Wall:
+                        tileName = "Wall";
+                        break;
+                    case MapTile.Water:
+                        tileName = "Water";
+                        break;
+                }
+
+                if (tileName != string.Empty)
+                {
+                    CreateTile(tileName, new Vector3(x - (XSize/2f), 0, y - (YSize/2f)), transform);
+                }
+            }
+        }
+        
+        // Fill map features, generate resources, etc
+        DrawForest(5);
+    }
+    
+    /// <summary>
+    /// helper method to create new Agents
+    /// </summary>
+    /// <param name="prefabName">name of tile to spawn</param>
+    /// <returns>newly created GameObject tile</returns>
+    private static GameObject CreateTile(string prefabName, Vector3 position, Transform transform)
+    {
+        var prefab = Resources.Load("Tile_" + prefabName, typeof(GameObject));
+        GameObject go = Instantiate(prefab, position, Quaternion.identity) as GameObject;
+        go.transform.parent = transform;
+        go.name = prefab.name;
+        return go;
     }
 
     /// <summary>
@@ -107,7 +157,7 @@ public class MapController : MonoBehaviour
         DrawBorder();
         initialized = true;
     }
-    
+
     /// <summary>
     /// adds a border of walls around \ref this.map
     /// </summary>
@@ -120,6 +170,17 @@ public class MapController : MonoBehaviour
         // Draw vertical borders
         DrawVerticalLine(0, 0, YSize);
         DrawVerticalLine(XSize - 1, 0, YSize);
+    }
+    
+    private void DrawForest(int num)
+    {
+        // Draw at random, each tree for all trees
+        for (int i = 0; i < num; i++)
+        {
+            GameObject go = CreateTile("Tree", new Vector3(Random.Range(-XSize / 2f + 2, XSize / 2f - 2), 1,
+                                                           Random.Range(-YSize / 2f + 2, YSize / 2f - 2)), transform);
+            Providers.Add(go.GetComponent<Provider>());
+        }
     }
 
     /// <summary>
@@ -135,7 +196,7 @@ public class MapController : MonoBehaviour
             map[i][y] = MapTile.Wall;
         }
     }
-
+    
     /// <summary>
     /// adds walls in a vertical line
     /// </summary>

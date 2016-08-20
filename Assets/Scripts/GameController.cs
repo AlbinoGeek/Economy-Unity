@@ -57,8 +57,13 @@ public class GameController : MonoBehaviour
     private void Start()
     {
         GameObject agentContainer = new GameObject("Agents");
+
+        int randomGift = Random.Range(0, population.Length);
+        int i = 0;
+        
         foreach (string name in population)
         {
+
             GameObject go = Agent.Create(name);
             Agent agent = go.GetComponent<Agent>();
             go.transform.parent = agentContainer.transform;
@@ -71,8 +76,15 @@ public class GameController : MonoBehaviour
             agent.inventory.Add("Bread", Random.Range(5, 15));
             agent.inventory.Add("Water", Random.Range(10, 30));
             
+            if (i == randomGift)
+            {
+                // GIVE THEM SOME EXTRA MONEY
+                agent.inventory.Add("Money", Random.Range(10, 20));
+            }
+
             players.Add(agent);
             map.AddAgent(agent);
+            i++;
         }
 
         log.Append(string.Format("{0} Agents created, Simulating Economy...", map.Agents.Count));

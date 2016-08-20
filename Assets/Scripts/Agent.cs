@@ -143,7 +143,9 @@ public class Agent : MonoBehaviour
                 rigidbody.velocity = Vector3.zero;
                 rigidbody.angularVelocity = Vector3.zero;
                 
+                // We shrivel up and die
                 DeathTime = Time.timeSinceLevelLoad;
+                transform.localScale /= 2;
 
                 // Show a message when an Agent dies
                 string cause = calories < 0 ? "Starvation" : hydration < 0 ? "Dehydration" : "Unknown";
@@ -158,9 +160,6 @@ public class Agent : MonoBehaviour
         {
             Destination = map.GetRandomPoint();
         }
-
-        // Point us towards our destination
-        MoveTowardsDestination();
 
         // Consume food to compensate
         if (calories < 50)
@@ -186,20 +185,39 @@ public class Agent : MonoBehaviour
             health--;
         }
 
+        int actionsTaken = 0;
         if (Alive && LastActionTime < Time.timeSinceLevelLoad)
         {
             LastActionTime = Time.timeSinceLevelLoad + 1;
 
-            var nearby = GetNeightbors(2);
+            var nearbyAgents = GetNeightbors(2);
 
             // Remove ourselves from the list
-            nearby = nearby.Where(agent => agent != this);
+            nearbyAgents = nearbyAgents.Where(agent => agent != this);
+            
+            var dead = nearbyAgents.Where(agent => !agent.Alive);
+            actionsTaken += Loot(dead);
 
-            var dead = nearby.Where(agent => !agent.Alive);
-            Loot(dead);
+            // You can only loot OR trade ...
+            if (actionsTaken == 0)
+            {
+                var alive = nearbyAgents.Where(agent => agent.Alive);
+                actionsTaken += Trade(alive);
+            }
 
-            var alive = nearby.Where(agent => agent.Alive);
-            Trade(alive);
+            // tradee OR "resource action" per turn
+            if (actionsTaken == 0)
+            {
+                var nearbyProviders = GetNearbyProviders(2);
+                CollectFrom(nearbyProviders);
+            }
+        }
+
+        // If we didn't take an action, move.
+        if (actionsTaken == 0)
+        {
+            // Point us towards our destination
+            MoveTowardsDestination();
         }
     }
     #endregion
@@ -207,6 +225,11 @@ public class Agent : MonoBehaviour
     private IEnumerable<Agent> GetNeightbors(float range)
     {
         return map.Agents.Where(agent => Vector3.Distance(agent.transform.position, transform.position) < range);
+    }
+
+    private IEnumerable<Provider> GetNearbyProviders(float range)
+    {
+        return map.Providers.Where(@object => Vector3.Distance(@object.transform.position, transform.position) < range);
     }
 
     private void MoveTowardsDestination()
@@ -231,8 +254,34 @@ public class Agent : MonoBehaviour
         }
     }
 
-    private void Loot(IEnumerable<Agent> nearbyAgents)
+    private int CollectFrom(IEnumerable<Provider> nearbyProviders)
     {
+        int count = 0;
+        for (int i = 0; i < nearbyProviders.Count(); i++)
+        {
+            Provider provider = nearbyProviders.ElementAt(i);
+
+            // If the object isn't interactable, then ... go next
+            if (!provider)
+            {
+                continue;
+            }
+
+            // Takes item from provider as per its rules
+            inventory.Add(provider.ItemName, provider.StockPerUse);
+            provider.ItemStock -= provider.StockPerUse;
+
+            log.Append(string.Format("{0} collected {1}x {2} from {3}", name, provider.ItemName, provider.StockPerUse, provider.gameObject.name));
+            provider.ReconsiderLife();
+
+            return count;
+        }
+        return count;
+    }
+
+    private int Loot(IEnumerable<Agent> nearbyAgents)
+    {
+        int count = 0;
         string[] lootable = { "Money", "Bread", "Water" };
         for (int i = 0; i < nearbyAgents.Count(); i++)
         {
@@ -256,20 +305,29 @@ public class Agent : MonoBehaviour
                     other.inventory.Remove(lootable[j], theirs.Quantity);
                 }
             }
+            count++;
+
+            // Remove body from game
+            map.RemoveAgent(other);
+            Destroy(other.gameObject);
 
             log.Append(string.Format("{0} looted the dead body of {1}", name, other.name));
 
             // You are only allowed to loot one body per turn
-            return;
+            return count;
         }
+
+        return count;
     }
 
-    private void Trade(IEnumerable<Agent> nearbyAgents)
+    private int Trade(IEnumerable<Agent> nearbyAgents)
     {
+        int count = 0;
+
         // If we have run out of money stop trading
         if (inventory.Find("Money") == null)
         {
-            return;
+            return count;
         }
 
         string[] tradable = { "Bread", "Water" };
@@ -283,7 +341,7 @@ public class Agent : MonoBehaviour
                 // If we have run out of money stop trading
                 if (inventory.Find("Money") == null)
                 {
-                    return;
+                    return count;
                 }
                 
                 Item ours = inventory.Find(tradable[j]);
@@ -294,25 +352,35 @@ public class Agent : MonoBehaviour
                     ours.Quantity < 5 &&
                     theirs.Quantity > 10)
                 {
+                    if (inventory.Find("Money").Quantity < ours.Value)
+                    {
+                        continue;
+                    }
+
                     inventory.Find("Money").Quantity -= ours.Value;
                     other.inventory.Find("Money").Quantity += ours.Value;
 
                     inventory.Add(tradable[j], 1);
                     other.inventory.Remove(tradable[j], 1);
+                    count++;
 
                     log.Append(string.Format("{0} bought {1} from {2}", name, tradable[j], other.name));
                 }
             }
         }
-    }
 
+        return count;
+    }
+    
     public override string ToString()
     {
+        var money = inventory.Find("Money");
         var food = inventory.Find("Bread");
         var water = inventory.Find("Water");
         
-        return string.Format("F: {1, -3} | W: {2, -3} | {0}",
+        return string.Format("$: {1} F: {2} | W: {3} | {0}",
             name,
+            money != null ? money.Quantity : 0,
             food != null ? food.Quantity : 0,
             water != null ? water.Quantity : 0);
     }
