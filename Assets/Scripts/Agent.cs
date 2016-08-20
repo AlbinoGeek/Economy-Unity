@@ -14,6 +14,11 @@ using UnityEngine;
 public class Agent : MonoBehaviour
 {
     /// <summary>
+    /// represents our forward moving speed, also decides how fast we consume resources
+    /// </summary>
+    public float moveSpeed = 3f;
+
+    /// <summary>
     /// food energy
     /// </summary>
     private float calories;
@@ -157,10 +162,6 @@ public class Agent : MonoBehaviour
         // Point us towards our destination
         MoveTowardsDestination();
 
-        // Consume standard resources
-        calories -= .2f;
-        hydration -= .4f;
-
         // Consume food to compensate
         if (calories < 50)
         {
@@ -222,7 +223,11 @@ public class Agent : MonoBehaviour
             transform.rotation = Quaternion.Lerp(transform.rotation, lookRotation, Time.fixedDeltaTime * 6);
 
             //move us towards the destination in question, if we're facing it.
-            transform.position += transform.TransformDirection(Vector3.forward * Time.fixedDeltaTime * 3);
+            transform.position += transform.TransformDirection(Vector3.forward * Time.fixedDeltaTime * moveSpeed);
+            
+            // Consume standard resources
+            calories -= 5f * Time.fixedDeltaTime * moveSpeed;
+            hydration -= 10f * Time.fixedDeltaTime * moveSpeed;
         }
     }
 
