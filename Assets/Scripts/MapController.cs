@@ -21,15 +21,36 @@ public class MapController : MonoBehaviour
     /// vertical (depth) length
     /// </summary>
     public int YSize;
-
+    
     /// <summary>
     /// whether we have run \ref Generate yet
     /// </summary>
     private bool initialized;
-
-    internal List<Agent> Agents { get; private set; }
-
+    
+    // TODO(Albino) This really should be private, but we need it elsewhere
+    public List<Agent> Agents { get; private set; }
+    
     private MapTile[][] map;
+    
+    public bool AddAgent(Agent agent)
+    {
+        if (!Agents.Contains(agent))
+        {
+            Agents.Add(agent);
+            return true;
+        }
+        return false;
+    }
+
+    public bool RemoveAgent(Agent agent)
+    {
+        if (Agents.Contains(agent))
+        {
+            Agents.Remove(agent);
+            return true;
+        }
+        return false;
+    }
 
     /// <summary>
     /// Gets a random valid point on the map
@@ -42,7 +63,7 @@ public class MapController : MonoBehaviour
         Vector3 point;
         while (true)
         {
-            point = new Vector3(Random.Range(0, XSize) - (XSize / 2), 0, Random.Range(0, YSize) - (YSize / 2));
+            point = new Vector3(Random.Range(-XSize / 2f, XSize / 2f), .1f, Random.Range(-YSize / 2f, YSize / 2f));
 
             Collider[] col = Physics.OverlapSphere(point + Vector3.up, .9f);
             if (col.Length == 0)

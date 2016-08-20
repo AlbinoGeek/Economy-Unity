@@ -38,6 +38,8 @@ public class GameController : MonoBehaviour
 
     private MapController map;
 
+    private PlayerList players;
+
     #region Unity
     /// <summary>
     /// gets references to map
@@ -46,10 +48,11 @@ public class GameController : MonoBehaviour
     {
         log = GameObject.Find("Activity").GetComponent<ActivityLog>();
         map = GameObject.Find("Map").GetComponent<MapController>();
+        players = GameObject.Find("Player List").GetComponent<PlayerList>();
     }
 
     /// <summary>
-    /// beings a game, initializing things as required
+    /// begins a game, initializing things as required
     /// </summary>
     private void Start()
     {
@@ -67,9 +70,9 @@ public class GameController : MonoBehaviour
             agent.inventory.Add("Money", Random.Range(0, 10));
             agent.inventory.Add("Bread", Random.Range(5, 15));
             agent.inventory.Add("Water", Random.Range(10, 30));
-
-            // Register our Agent as ready
-            map.Agents.Add(agent);
+            
+            players.Add(agent);
+            map.AddAgent(agent);
         }
 
         log.Append(string.Format("{0} Agents created, Simulating Economy...", map.Agents.Count));

@@ -93,6 +93,10 @@ public class Agent : MonoBehaviour
         return go;
     }
 
+    private PlayerList players;
+
+    private new Rigidbody rigidbody;
+
     #region Unity
     /// <summary>
     /// Sets default parameters
@@ -107,6 +111,7 @@ public class Agent : MonoBehaviour
 
         log = GameObject.Find("Activity").GetComponent<ActivityLog>();
         map = GameObject.Find("Map").GetComponent<MapController>();
+        players = GameObject.Find("Player List").GetComponent<PlayerList>();
     }
 
     /// <summary>
@@ -114,6 +119,7 @@ public class Agent : MonoBehaviour
     /// </summary>
     private void Start()
     {
+        rigidbody = GetComponent<Rigidbody>();
         Destination = transform.position;
     }
 
@@ -128,13 +134,10 @@ public class Agent : MonoBehaviour
             // We JUST died, let's do something about it.
             if (DeathTime == 0)
             {
-                Rigidbody rigidbody = GetComponent<Rigidbody>();
-
                 rigidbody.isKinematic = true;
                 rigidbody.velocity = Vector3.zero;
                 rigidbody.angularVelocity = Vector3.zero;
-
-                GetComponent<NavMeshAgent>().enabled = false;
+                
                 DeathTime = Time.timeSinceLevelLoad;
 
                 // Show a message when an Agent dies
@@ -146,12 +149,14 @@ public class Agent : MonoBehaviour
         }
 
         // If we have met our destination, set a new one
-        if (Vector3.Distance(transform.position, Destination) < .5f)
+        if (Vector3.Distance(transform.position, Destination) < 1f)
         {
             Destination = map.GetRandomPoint();
-            GetComponent<NavMeshAgent>().SetDestination(Destination);
         }
-        
+
+        // Point us towards our destination
+        MoveTowardsDestination();
+
         // Consume standard resources
         calories -= .2f;
         hydration -= .4f;
@@ -201,6 +206,24 @@ public class Agent : MonoBehaviour
     private IEnumerable<Agent> GetNeightbors(float range)
     {
         return map.Agents.Where(agent => Vector3.Distance(agent.transform.position, transform.position) < range);
+    }
+
+    private void MoveTowardsDestination()
+    {
+        if (Vector3.Distance(transform.position, Destination) > .5f)
+        {
+            //find the vector pointing from our position to the target
+            Vector3 direction = (Destination - transform.position).normalized / 4;
+
+            //create the rotation we need to be in to look at the target
+            Quaternion lookRotation = Quaternion.LookRotation(direction);
+
+            //rotate us over time according to speed until we are in the required rotation
+            transform.rotation = Quaternion.Lerp(transform.rotation, lookRotation, Time.fixedDeltaTime * 6);
+
+            //move us towards the destination in question, if we're facing it.
+            transform.position += transform.TransformDirection(Vector3.forward * Time.fixedDeltaTime * 3);
+        }
     }
 
     private void Loot(IEnumerable<Agent> nearbyAgents)
@@ -263,7 +286,7 @@ public class Agent : MonoBehaviour
 
                 if (ours != null &&
                     theirs != null &&
-                    ours.Quantity < 10 &&
+                    ours.Quantity < 5 &&
                     theirs.Quantity > 10)
                 {
                     inventory.Find("Money").Quantity -= ours.Value;
@@ -276,5 +299,16 @@ public class Agent : MonoBehaviour
                 }
             }
         }
+    }
+
+    public override string ToString()
+    {
+        var food = inventory.Find("Bread");
+        var water = inventory.Find("Water");
+        
+        return string.Format("F: {1, -3} | W: {2, -3} | {0}",
+            name,
+            food != null ? food.Quantity : 0,
+            water != null ? water.Quantity : 0);
     }
 }
