@@ -58,12 +58,11 @@ public class GameController : MonoBehaviour
     {
         GameObject agentContainer = new GameObject("Agents");
 
-        int randomGift = Random.Range(0, population.Length);
-        int i = 0;
-        
+        float hue = 0f;
+        float inc = 1f / population.Length;
+        bool even = true;
         foreach (string name in population)
         {
-
             GameObject go = Agent.Create(name);
             Agent agent = go.GetComponent<Agent>();
             go.transform.parent = agentContainer.transform;
@@ -73,18 +72,17 @@ public class GameController : MonoBehaviour
 
             // Give them a random quality starting kit
             agent.inventory.Add("Money", Random.Range(0, 10));
-            agent.inventory.Add("Bread", Random.Range(5, 15));
-            agent.inventory.Add("Water", Random.Range(10, 30));
-            
-            if (i == randomGift)
-            {
-                // GIVE THEM SOME EXTRA MONEY
-                agent.inventory.Add("Money", Random.Range(10, 20));
-            }
+            agent.inventory.Add("Bread", Random.Range(10, 15));
+            agent.inventory.Add("Water", Random.Range(10, 15));
 
+            // Generate a random color for this agent
+            // TODO(Albino) should be visually unique from all previous colors
+            agent.color = new HSBColor(hue, (even ? .75f : .5f), .75f,  1f).ToColor();
+            
             players.Add(agent);
             map.AddAgent(agent);
-            i++;
+            even = !even;
+            hue += inc;
         }
 
         log.Append(string.Format("{0} Agents created, Simulating Economy...", map.Agents.Count));

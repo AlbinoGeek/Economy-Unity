@@ -63,6 +63,17 @@ public class Inventory
     }
 
     /// <summary>
+    /// count by name
+    /// </summary>
+    /// <param name="name">item to find</param>
+    /// <returns>amount found, or 0</returns>
+    public int Count(string name)
+    {
+        Item item = Find(name);
+        return item != null ? item.Quantity : 0;
+    }
+
+    /// <summary>
     /// shortcut to remove one
     /// </summary>
     /// <param name="name">item to remove</param>

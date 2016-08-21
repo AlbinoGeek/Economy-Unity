@@ -58,13 +58,15 @@ public class MapController : MonoBehaviour
     /// - not ocupied at the time of acquiring
     /// </summary>
     /// <returns>valid coordinate on map</returns>
-    public Vector3 GetRandomPoint()
+    public Vector3 GetRandomPoint(int offset = 0)
     {
         // We MUST find a valid point, this can't fail.
         Vector3 point;
         while (true)
         {
-            point = new Vector3(Random.Range(-XSize / 2f, XSize / 2f), .1f, Random.Range(-YSize / 2f, YSize / 2f));
+            point = new Vector3(Random.Range(-XSize / 2f + offset, XSize / 2f - offset),
+                                .1f,
+                                Random.Range(-YSize / 2f + offset, YSize / 2f - offset));
 
             Collider[] col = Physics.OverlapSphere(point + Vector3.up, .9f);
             if (col.Length == 0)
@@ -72,6 +74,20 @@ public class MapController : MonoBehaviour
                 return point;
             }
         }
+    }
+
+    /// <summary>
+    /// helper method to create new Agents
+    /// </summary>
+    /// <param name="prefabName">name of tile to spawn</param>
+    /// <returns>newly created GameObject tile</returns>
+    private static GameObject CreateTile(string prefabName, Vector3 position, Transform transform)
+    {
+        var prefab = Resources.Load("Tile_" + prefabName, typeof(GameObject));
+        GameObject go = Instantiate(prefab, position, Quaternion.identity) as GameObject;
+        go.transform.parent = transform;
+        go.name = prefab.name;
+        return go;
     }
 
     #region Unity
@@ -94,45 +110,29 @@ public class MapController : MonoBehaviour
     private void Start()
     {
         // Draw the structure and shape of the map
-        string tileName;
         for (int y = 0; y < YSize; y++)
         {
             for (int x = 0; x < XSize; x++)
             {
-                tileName = string.Empty;
-
                 switch (this.map[x][y])
                 {
                     case MapTile.Wall:
-                        tileName = "Wall";
+                        CreateTile("Wall", new Vector3(x - (XSize/2f), 0, y - (YSize/2f)), transform);
                         break;
-                }
-
-                if (tileName != string.Empty)
-                {
-                    CreateTile(tileName, new Vector3(x - (XSize/2f), 0, y - (YSize/2f)), transform);
                 }
             }
         }
         
         // Fill map features, generate resources, etc
-        DrawForest(5);
+        int rand = Random.Range(2, 4);
+        for (int i = 0; i < rand; i++)
+        {
+            DrawLake(GetRandomPoint(4), new Vector2(Random.Range(2, 6), Random.Range(2, 6)));
+        }
+        
+        DrawForest(Random.Range(4, 12));
     }
     
-    /// <summary>
-    /// helper method to create new Agents
-    /// </summary>
-    /// <param name="prefabName">name of tile to spawn</param>
-    /// <returns>newly created GameObject tile</returns>
-    private static GameObject CreateTile(string prefabName, Vector3 position, Transform transform)
-    {
-        var prefab = Resources.Load("Tile_" + prefabName, typeof(GameObject));
-        GameObject go = Instantiate(prefab, position, Quaternion.identity) as GameObject;
-        go.transform.parent = transform;
-        go.name = prefab.name;
-        return go;
-    }
-
     /// <summary>
     /// draw a border helper for \ref XSize and \ref YSize while selected
     /// </summary>
@@ -161,22 +161,48 @@ public class MapController : MonoBehaviour
     private void DrawBorder()
     {
         // Draw horizontal borders
-        DrawHorizontalLine(0, 0, XSize);
-        DrawHorizontalLine(0, YSize - 1, XSize);
+        DrawLineHorizontal(0, 0, XSize);
+        DrawLineHorizontal(0, YSize - 1, XSize);
 
         // Draw vertical borders
-        DrawVerticalLine(0, 0, YSize);
-        DrawVerticalLine(XSize - 1, 0, YSize);
+        DrawLineVertical(0, 0, YSize);
+        DrawLineVertical(XSize - 1, 0, YSize);
     }
-    
+
     private void DrawForest(int num)
     {
         // Draw at random, each tree for all trees
         for (int i = 0; i < num; i++)
         {
-            GameObject go = CreateTile("Tree", new Vector3(Random.Range(-XSize / 2f + 2, XSize / 2f - 2), 1,
-                                                           Random.Range(-YSize / 2f + 2, YSize / 2f - 2)), transform);
+            GameObject go = CreateTile("Tree", GetRandomPoint(), transform);
             Providers.Add(go.GetComponent<Provider>());
+
+            // Add a series of bushes to each tre.
+            float offset = -2;
+
+            go = CreateTile("Bush", go.transform.position + new Vector3(offset, 0, -offset), transform);
+            Providers.Add(go.GetComponent<Provider>());
+
+            go = CreateTile("Bush", go.transform.position + new Vector3(-offset, 0, offset), transform);
+            Providers.Add(go.GetComponent<Provider>());
+
+            go = CreateTile("Bush", go.transform.position + new Vector3(offset, 0, offset), transform);
+            Providers.Add(go.GetComponent<Provider>());
+
+            go = CreateTile("Bush", go.transform.position + new Vector3(-offset, 0, -offset), transform);
+            Providers.Add(go.GetComponent<Provider>());
+        }
+    }
+
+    private void DrawLake(Vector3 position, Vector2 dimensions)
+    {
+        for (int y = 0; y < (int)dimensions.y; y++)
+        {
+            for (int x = 0; x < (int)dimensions.x; x++)
+            {
+                GameObject go = CreateTile("Water", position + new Vector3(x, -1f, y), transform);
+                Providers.Add(go.GetComponent<Provider>());
+            }
         }
     }
 
@@ -186,7 +212,7 @@ public class MapController : MonoBehaviour
     /// <param name="x">starting horizontal position</param>
     /// <param name="y">starting vertical position</param>
     /// <param name="length">distance to draw</param>
-    private void DrawHorizontalLine(int x, int y, int length)
+    private void DrawLineHorizontal(int x, int y, int length)
     {
         for (int i = x; i < length + x; i++)
         {
@@ -200,7 +226,7 @@ public class MapController : MonoBehaviour
     /// <param name="x">starting horizontal position</param>
     /// <param name="y">starting vertical position</param>
     /// <param name="length">distance to draw</param>
-    private void DrawVerticalLine(int x, int y, int length)
+    private void DrawLineVertical(int x, int y, int length)
     {
         for (int i = y; i < length + y; i++)
         {

@@ -15,38 +15,66 @@ public class PlayerList : MonoBehaviour
     /// <summary>
     /// Canvas Text component set in Unity Editor
     /// </summary>
-    public Text Text;
+    public Transform panel;
 
-    private List<Agent> players;
+    /// <summary>
+    /// represents a single player entry as a prefab to instantiate many times
+    /// </summary>
+    public GameObject Prefab;
+
+    private List<PlayerListEntry> players;
 
     private string text;
 
     public bool Add(Agent agent)
     {
-        if (!players.Contains(agent))
+        for (int i = 0; i < players.Count; i++)
         {
-            players.Add(agent);
-            UpdatePlayers();
-            return true;
+            if (players[i].Agent == agent)
+            {
+                return false;
+            }
         }
+
+        var ple = new PlayerListEntry();
+        ple.Agent = agent;
+        ple.Position = players.Count;
+        ple.CreateCanvasElement(Prefab, panel);
+        ple.CanvasElement.color = agent.color;
+        players.Add(ple);
+        return true;
+    }
+    
+    public bool Remove(Agent agent)
+    {
+        for (int i = 0; i < players.Count; i++)
+        {
+            if (players[i].Agent == agent)
+            {
+                players.Remove(players[i]);
+                return true;
+            }
+        }
+
         return false;
     }
 
-    public bool Remove(Agent agent)
+    public void Update(Agent agent)
     {
-        if (players.Contains(agent))
+        for (int i = 0; i < players.Count; i++)
         {
-            players.Remove(agent);
-            UpdatePlayers();
-            return true;
+            if (players[i].Agent == agent)
+            {
+                players[i].CanvasElement.color = agent.color;
+                players[i].CanvasElement.text = players[i].Agent.ToString();
+            }
         }
-        return false;
     }
 
     #region Unity
     private void Awake()
     {
-        players = new List<Agent>();
+        players = new List<PlayerListEntry>();
     }
 
     private void LateUpdate()
@@ -57,17 +85,16 @@ public class PlayerList : MonoBehaviour
 
     private void UpdatePlayers()
     {
-        System.Text.StringBuilder builder = new System.Text.StringBuilder();
-
         // Put them into the string Builder
         for (int i = 0; i < players.Count; i++)
         {
-            if (players[i].Alive)
+            if (players[i].Agent == null)
             {
-                builder.AppendLine(players[i].ToString());
+                players[i].CanvasElement.text = "Dead and Gone";
+                return;
             }
-        }
 
-        Text.text = builder.ToString().TrimEnd('\n');
+            players[i].CanvasElement.text = players[i].Agent.ToString();
+        }
     }
 }

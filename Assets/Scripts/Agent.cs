@@ -13,10 +13,21 @@ using UnityEngine;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class Agent : MonoBehaviour
 {
+    public static string[] tradable =
+    {
+        "Berry",
+        "Bread",
+        "Log",
+        "Plank",
+        "Water",
+    };
+
     /// <summary>
     /// represents our forward moving speed, also decides how fast we consume resources
     /// </summary>
     public float moveSpeed = 3f;
+    
+    public Color color = Color.white;
 
     /// <summary>
     /// food energy
@@ -112,7 +123,7 @@ public class Agent : MonoBehaviour
         inventory = new Inventory();
         calories = 100;
         hydration = 100;
-        health = 5;
+        health = 20;
 
         log = GameObject.Find("Activity").GetComponent<ActivityLog>();
         map = GameObject.Find("Map").GetComponent<MapController>();
@@ -126,6 +137,8 @@ public class Agent : MonoBehaviour
     {
         rigidbody = GetComponent<Rigidbody>();
         Destination = transform.position;
+
+        GetComponent<MeshRenderer>().material.color = color;
     }
 
     /// <summary>
@@ -150,6 +163,9 @@ public class Agent : MonoBehaviour
                 // Show a message when an Agent dies
                 string cause = calories < 0 ? "Starvation" : hydration < 0 ? "Dehydration" : "Unknown";
                 log.Append(string.Format("{0} has died of {1}", name, cause));
+                
+                color.a = .3f;
+                players.Update(this);
             }
 
             return;
@@ -164,9 +180,13 @@ public class Agent : MonoBehaviour
         // Consume food to compensate
         if (calories < 50)
         {
-            if (inventory.Remove("Bread", 1))
+            if (inventory.Remove("Berry", 1))
             {
-                calories += 50;
+                calories += 20;
+            }
+            else if (inventory.Remove("Bread", 1))
+            {
+                calories += 60;
             }
         }
 
@@ -195,21 +215,30 @@ public class Agent : MonoBehaviour
             // Remove ourselves from the list
             nearbyAgents = nearbyAgents.Where(agent => agent != this);
             
+            // 1) Try to loot dead bodies
             var dead = nearbyAgents.Where(agent => !agent.Alive);
             actionsTaken += Loot(dead);
-
-            // You can only loot OR trade ...
-            if (actionsTaken == 0)
-            {
-                var alive = nearbyAgents.Where(agent => agent.Alive);
-                actionsTaken += Trade(alive);
-            }
-
-            // tradee OR "resource action" per turn
+            
+            // 2) Try to collect resources from the environment
             if (actionsTaken == 0)
             {
                 var nearbyProviders = GetNearbyProviders(2);
                 CollectFrom(nearbyProviders);
+            }
+            
+            // 3) Try to trade with people near us
+            if (actionsTaken == 0)
+            {
+                var alive = nearbyAgents.Where(agent => agent.Alive);
+                actionsTaken += TradeWith(alive);
+
+                // 4) If we are getting desperate, try to steal...
+                if (actionsTaken == 0 &&
+                    inventory.Count("Money") < 4 &&
+                    (inventory.Count("Bread") < 3 || inventory.Count("Water") < 5))
+                {
+                    actionsTaken += StealFrom(alive);
+                }
             }
         }
 
@@ -271,7 +300,7 @@ public class Agent : MonoBehaviour
             inventory.Add(provider.ItemName, provider.StockPerUse);
             provider.ItemStock -= provider.StockPerUse;
 
-            log.Append(string.Format("{0} collected {1}x {2} from {3}", name, provider.ItemName, provider.StockPerUse, provider.gameObject.name));
+            log.Append(string.Format("{0} collected {1} x{2} from {3}", name, provider.ItemName, provider.StockPerUse, provider.gameObject.name));
             provider.ReconsiderLife();
 
             return count;
@@ -282,27 +311,24 @@ public class Agent : MonoBehaviour
     private int Loot(IEnumerable<Agent> nearbyAgents)
     {
         int count = 0;
-        string[] lootable = { "Money", "Bread", "Water" };
         for (int i = 0; i < nearbyAgents.Count(); i++)
         {
             Agent other = nearbyAgents.ElementAt(i);
 
             // Check if body has already been looted
-            if (other.inventory.Find("Money") == null &&
-                other.inventory.Find("Bread") == null &&
-                other.inventory.Find("Water") == null)
+            if (other.inventory.Items.Count == 0)
             {
                 continue;
             }
 
             // Take everything from their body!
-            for (int j = 0; j < lootable.Length; j++)
+            for (int j = 0; j < other.inventory.Items.Count; j++)
             {
-                Item theirs = other.inventory.Find(lootable[j]);
+                Item theirs = other.inventory.Items[j];
                 if (theirs != null)
                 {
-                    inventory.Add(lootable[j], theirs.Quantity);
-                    other.inventory.Remove(lootable[j], theirs.Quantity);
+                    inventory.Add(theirs.Name, theirs.Quantity);
+                    other.inventory.Remove(theirs.Name, theirs.Quantity);
                 }
             }
             count++;
@@ -320,17 +346,16 @@ public class Agent : MonoBehaviour
         return count;
     }
 
-    private int Trade(IEnumerable<Agent> nearbyAgents)
+    private int TradeWith(IEnumerable<Agent> nearbyAgents)
     {
         int count = 0;
 
         // If we have run out of money stop trading
-        if (inventory.Find("Money") == null)
+        if (inventory.Count("Money") <= 1)
         {
             return count;
         }
 
-        string[] tradable = { "Bread", "Water" };
         for (int i = 0; i < nearbyAgents.Count(); i++)
         {
             Agent other = nearbyAgents.ElementAt(i);
@@ -339,11 +364,11 @@ public class Agent : MonoBehaviour
             for (int j = 0; j < tradable.Length; j++)
             {
                 // If we have run out of money stop trading
-                if (inventory.Find("Money") == null)
+                if (inventory.Count("Money") <= 1)
                 {
                     return count;
                 }
-                
+
                 Item ours = inventory.Find(tradable[j]);
                 Item theirs = other.inventory.Find(tradable[j]);
 
@@ -352,7 +377,7 @@ public class Agent : MonoBehaviour
                     ours.Quantity < 5 &&
                     theirs.Quantity > 10)
                 {
-                    if (inventory.Find("Money").Quantity < ours.Value)
+                    if (inventory.Count("Money") < ours.Value)
                     {
                         continue;
                     }
@@ -372,16 +397,59 @@ public class Agent : MonoBehaviour
         return count;
     }
     
+    private int StealFrom(IEnumerable<Agent> nearbyAgents)
+    {
+        if (nearbyAgents.Count() == 0)
+        {
+            return 0;
+        }
+
+        Agent other = nearbyAgents.ElementAt(0);
+
+        // Attempt to steal food or water, whatever we need most.
+        string thingToSteal = string.Empty;
+        if (inventory.Count("Bread") < inventory.Count("Water"))
+        {
+            thingToSteal = "Bread";
+        }
+        else
+        {
+            thingToSteal = "Water";
+        }
+
+        Item theirs = other.inventory.Find(thingToSteal);
+        if (theirs == null)
+        {
+            // They didn't have what we wanted to steal.
+            return 0;
+        }
+
+        // Did we succeed?
+        if (Random.Range(0, 1f) > .7f)
+        {
+            // We succeeded!
+            inventory.Add(thingToSteal, 1);
+            other.inventory.Remove(thingToSteal, 1);
+
+            log.Append(string.Format("{0} STOLE {1} from {2}", name, thingToSteal, other.name));
+            return 1;
+        }
+        else
+        {
+            // We failed, and they hurt us.
+            log.Append(string.Format("{0} FAILED TO STEAL from {1}", name, other.name));
+            health--;
+            return 0;
+        }
+
+    }
+
     public override string ToString()
     {
-        var money = inventory.Find("Money");
-        var food = inventory.Find("Bread");
-        var water = inventory.Find("Water");
-        
         return string.Format("$: {1} F: {2} | W: {3} | {0}",
             name,
-            money != null ? money.Quantity : 0,
-            food != null ? food.Quantity : 0,
-            water != null ? water.Quantity : 0);
+            inventory.Count("Money"),
+            inventory.Count("Berry") + inventory.Count("Bread"),
+            inventory.Count("Water"));
     }
 }
