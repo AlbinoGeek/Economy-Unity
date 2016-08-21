@@ -106,9 +106,6 @@ public class MapController : MonoBehaviour
                     case MapTile.Wall:
                         tileName = "Wall";
                         break;
-                    case MapTile.Water:
-                        tileName = "Water";
-                        break;
                 }
 
                 if (tileName != string.Empty)
