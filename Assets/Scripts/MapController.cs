@@ -11,6 +11,8 @@ using UnityEngine;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class MapController : MonoBehaviour
 {
+    private static string[] fruits = { "Apple", "Coconut", "Mango" };
+
     /// <summary>
     /// horizontal (width) length
     /// </summary>
@@ -124,13 +126,13 @@ public class MapController : MonoBehaviour
         }
         
         // Fill map features, generate resources, etc
-        int rand = Random.Range(2, 4);
+        int rand = Random.Range(3, 5);
         for (int i = 0; i < rand; i++)
         {
-            DrawLake(GetRandomPoint(4), new Vector2(Random.Range(2, 6), Random.Range(2, 6)));
+            DrawLake(GetRandomPoint(4), new Vector2(Random.Range(3, 6), Random.Range(2, 6)));
         }
         
-        DrawForest(Random.Range(4, 12));
+        DrawForest(Random.Range(3, 8));
     }
     
     /// <summary>
@@ -175,9 +177,11 @@ public class MapController : MonoBehaviour
         for (int i = 0; i < num; i++)
         {
             GameObject go = CreateTile("Tree", GetRandomPoint(), transform);
-            Providers.Add(go.GetComponent<Provider>());
+            Provider provider = go.GetComponent<Provider>();
+            provider.DropEntries.Add(new Provider.DropEntry(fruits[Random.Range(0, fruits.Length)], 1, 1));
+            Providers.Add(provider);
 
-            // Add a series of bushes to each tre.
+            // Add a series of bushes to each tree.
             float offset = -2;
 
             go = CreateTile("Bush", go.transform.position + new Vector3(offset, 0, -offset), transform);

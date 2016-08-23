@@ -8,6 +8,7 @@ using System.Linq;
 /// represents a collection of \ref Item held by an \ref Agent
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
+[System.Serializable]
 public class Inventory
 {
     /// <summary>

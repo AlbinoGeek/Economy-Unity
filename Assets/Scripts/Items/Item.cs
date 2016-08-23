@@ -1,11 +1,13 @@
 ﻿// <copyright file="Item.cs" company="Mewzor Holdings Inc.">
 //     Copyright (c) Mewzor Holdings Inc. All rights reserved.
 // </copyright>
+using System.Collections.Generic;
 
 /// <summary>
 /// represents a thing in the world that can be traded or looted by \ref Agent
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
+[System.Serializable]
 public class Item
 {
     /// <summary>
@@ -16,11 +18,43 @@ public class Item
     {
         Name = name;
         Quantity = 1;
+
+        Attributes = new List<ItemAttribute>();
         
         // Load base properties from the database
         ItemBlueprint blueprint = Database.GetConnection("Items.db").Table<ItemBlueprint>().Where(x => x.Name == name).FirstOrDefault();
+
+        // If we could not load the item from database
+        if (blueprint == null)
+        {
+            // Throw an exception (corrupt database detected)
+            UnityEngine.Debug.LogError(string.Format("Item with name {0} could not be found.", name));
+        }
+
         Value = blueprint.Value;
         Weight = blueprint.Weight;
+
+        // Load Attributes from the database
+        var query = Database.GetConnection("Items.db").Table<ItemAttribute>().Where(x => x.ItemId == blueprint.Id);
+        foreach (var result in query)
+        {
+            Attributes.Add(result);
+        }
+    }
+
+    public List<ItemAttribute> Attributes { get; private set; }
+
+    public string GetAttribute(string Key)
+    {
+        for (int i = 0; i < Attributes.Count; i++)
+        {
+            if (Attributes[i].Key == Key)
+            {
+                return Attributes[i].Value;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

@@ -3,7 +3,6 @@
 // </copyright>
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 /// <summary>
 /// 
@@ -59,7 +58,7 @@ public class PlayerList : MonoBehaviour
         return false;
     }
 
-    public void Update(Agent agent)
+    public void UpdateCanvas(Agent agent)
     {
         for (int i = 0; i < players.Count; i++)
         {
@@ -77,21 +76,20 @@ public class PlayerList : MonoBehaviour
         players = new List<PlayerListEntry>();
     }
 
-    private void LateUpdate()
+    private void Start()
     {
-        UpdatePlayers();
+        InvokeRepeating("UpdateAllCanvas", .5f, .5f);
     }
     #endregion
 
-    private void UpdatePlayers()
+    public void UpdateAllCanvas()
     {
-        // Put them into the string Builder
         for (int i = 0; i < players.Count; i++)
         {
             if (players[i].Agent == null)
             {
                 players[i].CanvasElement.text = "Dead and Gone";
-                return;
+                continue;
             }
 
             players[i].CanvasElement.text = players[i].Agent.ToString();

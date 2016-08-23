@@ -13,10 +13,9 @@ using UnityEngine;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class Agent : MonoBehaviour
 {
-    public static string[] tradable =
-    {
-        "Berry",
-        "Bread",
+    private static string[] foods = { "Berry", "Bread", "Apple", "Coconut", "Mango" };
+    private static string[] tradable = {
+        "Berry", "Bread", "Apple", "Coconut", "Mango",
         "Log",
         "Plank",
         "Water",
@@ -165,7 +164,7 @@ public class Agent : MonoBehaviour
                 log.Append(string.Format("{0} has died of {1}", name, cause));
                 
                 color.a = .3f;
-                players.Update(this);
+                players.UpdateCanvas(this);
             }
 
             return;
@@ -180,13 +179,13 @@ public class Agent : MonoBehaviour
         // Consume food to compensate
         if (calories < 50)
         {
-            if (inventory.Remove("Berry", 1))
+            foreach (string food in foods)
             {
-                calories += 20;
-            }
-            else if (inventory.Remove("Bread", 1))
-            {
-                calories += 60;
+                if (inventory.Count(food) > 0)
+                {
+                    Item item = inventory.Find(food);
+                    calories += int.Parse(item.GetAttribute("Calories"));
+                }
             }
         }
 
@@ -205,49 +204,7 @@ public class Agent : MonoBehaviour
             health--;
         }
 
-        int actionsTaken = 0;
-        if (Alive && LastActionTime < Time.timeSinceLevelLoad)
-        {
-            LastActionTime = Time.timeSinceLevelLoad + 1;
-
-            var nearbyAgents = GetNeightbors(2);
-
-            // Remove ourselves from the list
-            nearbyAgents = nearbyAgents.Where(agent => agent != this);
-            
-            // 1) Try to loot dead bodies
-            var dead = nearbyAgents.Where(agent => !agent.Alive);
-            actionsTaken += Loot(dead);
-            
-            // 2) Try to collect resources from the environment
-            if (actionsTaken == 0)
-            {
-                var nearbyProviders = GetNearbyProviders(2);
-                CollectFrom(nearbyProviders);
-            }
-            
-            // 3) Try to trade with people near us
-            if (actionsTaken == 0)
-            {
-                var alive = nearbyAgents.Where(agent => agent.Alive);
-                actionsTaken += TradeWith(alive);
-
-                // 4) If we are getting desperate, try to steal...
-                if (actionsTaken == 0 &&
-                    inventory.Count("Money") < 4 &&
-                    (inventory.Count("Bread") < 3 || inventory.Count("Water") < 5))
-                {
-                    actionsTaken += StealFrom(alive);
-                }
-            }
-        }
-
-        // If we didn't take an action, move.
-        if (actionsTaken == 0)
-        {
-            // Point us towards our destination
-            MoveTowardsDestination();
-        }
+        TakeActions();
     }
     #endregion
 
@@ -283,6 +240,55 @@ public class Agent : MonoBehaviour
         }
     }
 
+    private void TakeActions()
+    {
+        int actionsTaken = 0;
+        if (Alive && LastActionTime < Time.timeSinceLevelLoad)
+        {
+            LastActionTime = Time.timeSinceLevelLoad + 1;
+
+            var nearbyAgents = GetNeightbors(2);
+
+            // Remove ourselves from the list
+            nearbyAgents = nearbyAgents.Where(agent => agent != this);
+
+            // 1) Try to loot dead bodies
+            var dead = nearbyAgents.Where(agent => !agent.Alive);
+            actionsTaken += Loot(dead);
+
+            // 2) Try to collect resources from the environment
+            if (actionsTaken == 0)
+            {
+                var nearbyProviders = GetNearbyProviders(2);
+                CollectFrom(nearbyProviders);
+            }
+
+            // 3) Try to trade with people near us
+            if (actionsTaken == 0)
+            {
+                var alive = nearbyAgents.Where(agent => agent.Alive);
+                actionsTaken += TradeWith(alive);
+
+                // 4) If we are getting desperate, try to steal...
+                if (actionsTaken == 0 &&
+                    inventory.Count("Money") < 4 &&
+                    (inventory.Count("Bread") < 3 || inventory.Count("Water") < 5))
+                {
+                    actionsTaken += StealFrom(alive);
+                }
+            }
+        }
+
+        // If we didn't take an action, move.
+        if (actionsTaken == 0)
+        {
+            // Point us towards our destination
+            MoveTowardsDestination();
+        }
+    }
+
+    // ACTIONS BELOW THIS POINT
+
     private int CollectFrom(IEnumerable<Provider> nearbyProviders)
     {
         int count = 0;
@@ -297,11 +303,12 @@ public class Agent : MonoBehaviour
             }
 
             // Takes item from provider as per its rules
-            inventory.Add(provider.ItemName, provider.StockPerUse);
-            provider.ItemStock -= provider.StockPerUse;
-
-            log.Append(string.Format("{0} collected {1} x{2} from {3}", name, provider.ItemName, provider.StockPerUse, provider.gameObject.name));
-            provider.ReconsiderLife();
+            Provider.DropEntry drop = provider.GetDrop();
+            if (drop != null)
+            {
+                inventory.Add(drop.ItemName, drop.StockPerUse);
+                log.Append(string.Format("{0} collected {1} x{2} from {3}", name, drop.ItemName, drop.StockPerUse, provider.gameObject.name));
+            }
 
             return count;
         }

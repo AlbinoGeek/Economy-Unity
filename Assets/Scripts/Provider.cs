@@ -1,6 +1,8 @@
 ﻿// <copyright file="Provider.cs" company="Mewzor Holdings Inc.">
 //     Copyright (c) Mewzor Holdings Inc. All rights reserved.
 // </copyright>
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -10,20 +12,33 @@ using UnityEngine;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class Provider : MonoBehaviour
 {
-    /// <summary>
-    /// creates a representation of this item
-    /// </summary>
-    public string ItemName;
+    [System.Serializable]
+    public class DropEntry
+    {
+        public DropEntry(string name, int stock, int perUse)
+        {
+            ItemName = name;
+            ItemStock = stock;
+            StockPerUse = perUse;
+        }
 
-    /// <summary>
-    /// how many items can be taken before depleted
-    /// </summary>
-    public int ItemStock = 1;
+        /// <summary>
+        /// creates a representation of this item
+        /// </summary>
+        public string ItemName;
 
-    /// <summary>
-    /// how many items are collected per use
-    /// </summary>
-    public int StockPerUse = 1;
+        /// <summary>
+        /// how many items can be taken before depleted
+        /// </summary>
+        public int ItemStock;
+
+        /// <summary>
+        /// how many items are collected per use
+        /// </summary>
+        public int StockPerUse;
+    }
+
+    public List<DropEntry> DropEntries;
 
     /// <summary>
     /// destroy the parent object once we have been depleted
@@ -35,28 +50,40 @@ public class Provider : MonoBehaviour
     /// </summary>
     public GameObject OnDestroyReplace = null;
 
-    /// <summary>
-    /// makes the Provider face an existential question of its own existence
-    /// (but really, it just sees if we should be destroyed yet or not)
-    /// </summary>
-    public void ReconsiderLife()
+    public DropEntry GetDrop()
     {
-        // If we have run out of stock, and were told to destroy on empty ...
-        if (ItemStock <= 0 && DestroyOnEmpty)
+        for (int i = 0; i < DropEntries.Count; i++)
         {
-            // If we have something to replace ourselves with...
-            if (OnDestroyReplace)
+            if (DropEntries[i].ItemStock <= 0)
             {
-                GameObject go = Instantiate(OnDestroyReplace, transform.position - Vector3.up, transform.rotation) as GameObject;
-                go.transform.parent = transform.parent;
+                continue;
             }
 
-            // Remove ourselves from the map list
-            GameObject.Find("Map").GetComponent<MapController>().Providers.Remove(this);
-
-            // Destroy ourselves
-            Destroy(gameObject);
-            enabled = false;
+            DropEntries[i].ItemStock -= DropEntries[i].StockPerUse;
+            return DropEntries[i];
         }
+
+        if (DestroyOnEmpty)
+        {
+            DestroySelf();
+        }
+        return null;
+    }
+    
+    private void DestroySelf()
+    {
+        // If we have something to replace ourselves with...
+        if (OnDestroyReplace)
+        {
+            GameObject go = Instantiate(OnDestroyReplace, transform.position - Vector3.up, transform.rotation) as GameObject;
+            go.transform.parent = transform.parent;
+        }
+
+        // Remove ourselves from the map list
+        GameObject.Find("Map").GetComponent<MapController>().Providers.Remove(this);
+
+        // Destroy ourselves
+        Destroy(gameObject);
+        enabled = false;
     }
 }
