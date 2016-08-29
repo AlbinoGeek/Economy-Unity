@@ -21,9 +21,7 @@ public class PlayerList : MonoBehaviour
     /// </summary>
     public GameObject Prefab;
 
-    private List<PlayerListEntry> players;
-
-    private string text;
+    private List<PlayerListEntry> players = new List<PlayerListEntry>();
 
     public bool Add(Agent agent)
     {
@@ -40,6 +38,17 @@ public class PlayerList : MonoBehaviour
         ple.Position = players.Count;
         ple.CreateCanvasElement(Prefab, panel);
         ple.CanvasElement.color = agent.color;
+
+        ple.CanvasElement.fontSize = 20;
+        if (ple.Agent.name.Length > 14)
+        {
+            ple.CanvasElement.fontSize = 16;
+        }
+        else if (ple.Agent.name.Length > 8)
+        {
+            ple.CanvasElement.fontSize = 18;
+        }
+
         players.Add(ple);
         return true;
     }
@@ -71,11 +80,6 @@ public class PlayerList : MonoBehaviour
     }
 
     #region Unity
-    private void Awake()
-    {
-        players = new List<PlayerListEntry>();
-    }
-
     private void Start()
     {
         InvokeRepeating("UpdateAllCanvas", .5f, .5f);

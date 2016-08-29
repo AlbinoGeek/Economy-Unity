@@ -25,20 +25,20 @@ public class Provider : MonoBehaviour
         /// <summary>
         /// creates a representation of this item
         /// </summary>
-        public string ItemName;
+        public string ItemName = string.Empty;
 
         /// <summary>
         /// how many items can be taken before depleted
         /// </summary>
-        public int ItemStock;
+        public int ItemStock = 0;
 
         /// <summary>
         /// how many items are collected per use
         /// </summary>
-        public int StockPerUse;
+        public int StockPerUse = 0;
     }
 
-    public List<DropEntry> DropEntries;
+    public List<DropEntry> DropEntries = new List<DropEntry>();
 
     /// <summary>
     /// destroy the parent object once we have been depleted
@@ -52,22 +52,31 @@ public class Provider : MonoBehaviour
 
     public DropEntry GetDrop()
     {
-        for (int i = 0; i < DropEntries.Count; i++)
+        var randomlyOrdered = DropEntries.OrderBy(i => Random.value);
+        foreach (DropEntry dropEntry in randomlyOrdered)
         {
-            if (DropEntries[i].ItemStock <= 0)
+            if (dropEntry.ItemStock <= 0)
             {
+                DropEntries.Remove(dropEntry);
                 continue;
             }
 
-            DropEntries[i].ItemStock -= DropEntries[i].StockPerUse;
-            return DropEntries[i];
+            dropEntry.ItemStock -= dropEntry.StockPerUse;
+            return dropEntry;
         }
 
-        if (DestroyOnEmpty)
-        {
-            DestroySelf();
-        }
         return null;
+    }
+
+    private void FixedUpdate()
+    {
+        if (DropEntries.Count == 0)
+        {
+            if (DestroyOnEmpty)
+            {
+                DestroySelf();
+            }
+        }
     }
     
     private void DestroySelf()
@@ -77,10 +86,11 @@ public class Provider : MonoBehaviour
         {
             GameObject go = Instantiate(OnDestroyReplace, transform.position - Vector3.up, transform.rotation) as GameObject;
             go.transform.parent = transform.parent;
+            go.name = OnDestroyReplace.name;
         }
 
         // Remove ourselves from the map list
-        GameObject.Find("Map").GetComponent<MapController>().Providers.Remove(this);
+        GameObject.Find("Control Objects").GetComponent<MapController>().Providers.Remove(this);
 
         // Destroy ourselves
         Destroy(gameObject);

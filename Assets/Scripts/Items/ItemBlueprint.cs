@@ -12,14 +12,24 @@ public class ItemBlueprint
     [PrimaryKey, AutoIncrement]
     public int Id { get; set; }
 
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
-    public int Value { get; set; }
+    /// <summary>
+    /// Gets or sets relative worth of this item (money is 1, but weights .01)
+    /// </summary>
+    public int Value { get; set; } = 0;
 
-    public float Weight { get; set; }
+    /// <summary>
+    /// Gets or sets mass of object in lbs, detractor to the observed value
+    /// </summary>
+    public float Weight { get; set; } = 0;
     
+    /// <summary>
+    /// exists for debugging
+    /// </summary>
+    /// <returns>string representation</returns>
     public override string ToString()
     {
-        return string.Format("[ItemBlueprint Id={0}, Name={1}, Value={2}, Weight={3}]", Id, Name, Value, Weight);
+        return $"[ItemBlueprint Id={Id}, Name={Name}, Value={Value}, Weight={Weight}]";
     }
 }

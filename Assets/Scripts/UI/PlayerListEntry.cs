@@ -20,7 +20,7 @@ public struct PlayerListEntry
         CanvasElement = go.GetComponent<Text>();
 
         go.name = Agent.name;
-        go.transform.parent = parent;
-        go.transform.position = new Vector2(10, Position * 15 + 20);
+        go.transform.SetParent(parent);
+        go.transform.position = new Vector2(5, (Position * 26) + 30);
     }
 }

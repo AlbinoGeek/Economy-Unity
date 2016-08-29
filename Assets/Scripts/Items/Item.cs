@@ -10,6 +10,16 @@ using System.Collections.Generic;
 [System.Serializable]
 public class Item
 {
+    public static Item Clone(Item source)
+    {
+        Item item = new Item(source.Name);
+        item.Attributes = source.Attributes;
+        item.Quantity = 1;
+        item.Value = source.Value;
+        item.Weight = source.Weight;
+        return item;
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="Item" /> class and load from \ref ItemBlueprint. 
     /// </summary>
@@ -17,9 +27,6 @@ public class Item
     public Item(string name)
     {
         Name = name;
-        Quantity = 1;
-
-        Attributes = new List<ItemAttribute>();
         
         // Load base properties from the database
         ItemBlueprint blueprint = Database.GetConnection("Items.db").Table<ItemBlueprint>().Where(x => x.Name == name).FirstOrDefault();
@@ -42,13 +49,33 @@ public class Item
         }
     }
 
-    public List<ItemAttribute> Attributes { get; private set; }
+    public List<ItemAttribute> Attributes { get; private set; } = new List<ItemAttribute>();
 
-    public string GetAttribute(string Key)
+    /// <summary>
+    /// Gets name, unique, same as file
+    /// </summary>
+    public string Name { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Gets amount in stack
+    /// </summary>
+    public int Quantity { get; internal set; } = 1;
+
+    /// <summary>
+    ///  Gets relative trading cost in Money
+    /// </summary>
+    public int Value { get; private set; } = 0;
+
+    /// <summary>
+    /// Gets carrying mass
+    /// </summary>
+    public float Weight { get; private set; } = 0;
+
+    public string GetAttribute(string key)
     {
         for (int i = 0; i < Attributes.Count; i++)
         {
-            if (Attributes[i].Key == Key)
+            if (Attributes[i].Key == key)
             {
                 return Attributes[i].Value;
             }
@@ -56,24 +83,4 @@ public class Item
 
         return null;
     }
-
-    /// <summary>
-    /// Gets name, unique, same as file
-    /// </summary>
-    public string Name { get; private set; }
-
-    /// <summary>
-    /// Gets amount in stack
-    /// </summary>
-    public int Quantity { get; internal set; }
-    
-    /// <summary>
-    ///  Gets relative trading cost in Money
-    /// </summary>
-    public int Value { get; private set; }
-
-    /// <summary>
-    /// Gets carrying mass
-    /// </summary>
-    public float Weight { get; private set; }
 }

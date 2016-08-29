@@ -9,7 +9,7 @@ using UnityEngine;
 /// </summary>
 [DisallowMultipleComponent]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
-public class MapController : MonoBehaviour
+public class MapController : GlobalBehaviour
 {
     private static string[] fruits = { "Apple", "Coconut", "Mango" };
 
@@ -22,117 +22,66 @@ public class MapController : MonoBehaviour
     /// vertical (depth) length
     /// </summary>
     public int YSize;
-    
-    /// <summary>
-    /// whether we have run \ref Generate yet
-    /// </summary>
-    private bool initialized;
-    
-    // TODO(Albino) This really should be private, but we need it elsewhere
-    public List<Agent> Agents { get; private set; }
 
-    internal List<Provider> Providers { get; private set; }
+    // TODO(Albino) This really should be private, but we need it elsewhere
+    public List<Agent> Agents { get; private set; } = new List<Agent>();
+
+    internal List<Provider> Providers { get; private set; } = new List<Provider>();
     
-    private MapTile[][] map;
+    private MapTile[][] mapData;
     
-    public bool AddAgent(Agent agent)
+    public bool IsInMapBounds(Vector3 position)
     {
-        if (!Agents.Contains(agent))
+        if (position.x > 0 + 3f &&
+            position.x < XSize - 3f &&
+            position.z > 0 + 3f &&
+            position.z < YSize - 3f)
         {
-            Agents.Add(agent);
             return true;
         }
+
         return false;
     }
 
-    public bool RemoveAgent(Agent agent)
+    public bool IsValidPosition(Vector3 position)
     {
-        if (Agents.Contains(agent))
-        {
-            Agents.Remove(agent);
-            return true;
-        }
-        return false;
+        Collider[] col = Physics.OverlapSphere(position, .5f);
+        return col.Length == 0;
     }
 
     /// <summary>
     /// Gets a random valid point on the map
-    /// - not ocupied at the time of acquiring
+    /// - not occupied at the time of acquiring
     /// </summary>
+    /// <param name="offset">distance from all edges</param>
     /// <returns>valid coordinate on map</returns>
-    public Vector3 GetRandomPoint(int offset = 0)
+    public Vector3 GetRandomPoint(float offset = 1f)
     {
-        // We MUST find a valid point, this can't fail.
-        Vector3 point;
         while (true)
         {
-            point = new Vector3(Random.Range(-XSize / 2f + offset, XSize / 2f - offset),
-                                .1f,
-                                Random.Range(-YSize / 2f + offset, YSize / 2f - offset));
+            Vector3 point = new Vector3(Random.Range(0 + offset, XSize - offset),
+                                        .1f,
+                                        Random.Range(0 + offset, YSize - offset));
 
-            Collider[] col = Physics.OverlapSphere(point + Vector3.up, .9f);
-            if (col.Length == 0)
+            if (IsInMapBounds(point) && IsValidPosition(point))
             {
                 return point;
             }
         }
     }
 
-    /// <summary>
-    /// helper method to create new Agents
-    /// </summary>
-    /// <param name="prefabName">name of tile to spawn</param>
-    /// <returns>newly created GameObject tile</returns>
-    private static GameObject CreateTile(string prefabName, Vector3 position, Transform transform)
-    {
-        var prefab = Resources.Load("Tile_" + prefabName, typeof(GameObject));
-        GameObject go = Instantiate(prefab, position, Quaternion.identity) as GameObject;
-        go.transform.parent = transform;
-        go.name = prefab.name;
-        return go;
-    }
-
     #region Unity
     /// <summary>
     /// if not \ref initialized then \ref Generate map 
     /// </summary>
-    private void Awake()
+    protected override void Awake()
     {
-        Agents = new List<Agent>();
-        Providers = new List<Provider>();
-        if (!initialized)
-        {
-            Generate();
-        }
-    }
-    
-    /// <summary>
-    /// builds the physical map based on \ref this.map
-    /// </summary>
-    private void Start()
-    {
-        // Draw the structure and shape of the map
-        for (int y = 0; y < YSize; y++)
-        {
-            for (int x = 0; x < XSize; x++)
-            {
-                switch (this.map[x][y])
-                {
-                    case MapTile.Wall:
-                        CreateTile("Wall", new Vector3(x - (XSize/2f), 0, y - (YSize/2f)), transform);
-                        break;
-                }
-            }
-        }
-        
-        // Fill map features, generate resources, etc
-        int rand = Random.Range(3, 5);
-        for (int i = 0; i < rand; i++)
-        {
-            DrawLake(GetRandomPoint(4), new Vector2(Random.Range(3, 6), Random.Range(2, 6)));
-        }
-        
-        DrawForest(Random.Range(3, 8));
+        base.Awake();
+
+        // Prevent self access
+        map = null;
+
+        Generate();
     }
     
     /// <summary>
@@ -140,21 +89,148 @@ public class MapController : MonoBehaviour
     /// </summary>
     private void OnDrawGizmosSelected()
     {
-        Gizmos.DrawWireCube(transform.position, new Vector3(XSize, .25f, YSize));
+        Gizmos.DrawWireCube(transform.position + new Vector3(XSize/2f, 0, YSize/2), new Vector3(XSize, .25f, YSize));
     }
     #endregion
 
     private void Generate()
     {
         // Initialize the map array
-        this.map = new MapTile[XSize][];
+        mapData = new MapTile[XSize][];
         for (int i = 0; i < XSize; i++)
         {
-            this.map[i] = new MapTile[YSize];
+            mapData[i] = new MapTile[YSize];
+        }
+        
+        // Place lake near middle
+        int originX = Random.Range(20, XSize - 20);
+        int originY = Random.Range(20, YSize - 20);
+        int width = Random.Range(5, 13);
+        int height = Random.Range(5, 13);
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                if (x < 1 || x > width - 1 ||
+                    y < 1 || y > height - 1)
+                {
+                    // Randomly (40% of the time), don't draw the lake's outer edges
+                    if (Random.value > .6f)
+                    {
+                        continue;
+                    }
+                }
+
+                mapData[originX + x][originY + y] = MapTile.Water;
+            }
         }
 
+        // Draw at random, each tree for all trees
+        int trees = Random.Range(11, 18);
+        for (int i = 0; i < trees; i++)
+        {
+            int x = Random.Range(1, XSize - 1);
+            int y = Random.Range(1, YSize - 1);
+
+            if (mapData[x][y] != MapTile.Dirt)
+            {
+                // We can't place that tree
+                continue;
+            }
+
+            mapData[x][y] = MapTile.Tree;
+
+            // Add 0-3 bushes per tree
+            int bushes = Random.Range(0, 3);
+            for (int j = 0; j < bushes; j++)
+            {
+                x = Mathf.Clamp(Random.Range(x - 2, x + 2), 1, XSize - 1);
+                y = Mathf.Clamp(Random.Range(y - 2, y + 2), 1, YSize - 1);
+
+                if (mapData[x][y] != MapTile.Dirt)
+                {
+                    // We can't place that bush
+                    continue;
+                }
+
+                mapData[x][y] = MapTile.Bush;
+            }
+        }
+        
         DrawBorder();
-        initialized = true;
+        
+        // Draw the structure and shape of the map
+        for (int y = 0; y < YSize; y++)
+        {
+            for (int x = 0; x < XSize; x++)
+            {
+                Vector3 location = new Vector3(x, 0, y);
+
+                Provider provider;
+                GameObject tile;
+
+                switch (mapData[x][y])
+                {
+                    case MapTile.Water:
+                        tile = CreateResource("Water", location + Vector3.down, transform);
+                        Providers.Add(tile.GetComponent<Provider>());
+                        break;
+
+                    case MapTile.Tree:
+                        tile = CreateResource("Tree", location + (Vector3.up / 3f), transform);
+                        provider = tile.GetComponent<Provider>();
+
+                        // Add 1-4 random fruit to this tree
+                        provider.DropEntries.Add(new Provider.DropEntry(fruits[Random.Range(0, fruits.Length)], Random.Range(1, 4), 1));
+                        Providers.Add(provider);
+                        
+                        // Also draw dirt under tree
+                        goto case MapTile.Dirt;
+
+                    case MapTile.Bush:
+                        tile = CreateResource("Bush", location + (Vector3.down / 2), transform);
+                        Providers.Add(tile.GetComponent<Provider>());
+
+                        // Also draw dirt under bush
+                        goto case MapTile.Dirt;
+
+                    case MapTile.Dirt:
+                        tile = CreateResource("Dirt", location + Vector3.down, transform);
+                        
+                        // Also add rock (1%)
+                        if (Random.value < .01f)
+                        {
+                            tile = CreateResource("Stone", location + (Vector3.down * .5f), tile.transform);
+                            provider = tile.AddComponent<Provider>();
+                            string[] choices = { "Stone (Flat)", "Stone (Round)" };
+                            int count = Random.Range(1, 2);
+                            for (int i = 0; i < count; i++)
+                            {
+                                string choice = choices[Random.Range(0, 1)];
+                                provider.DropEntries.Add(new Provider.DropEntry(choice, 1, 1));
+                            }
+                            Providers.Add(provider);
+                        }
+                        break;
+                    case MapTile.Wall:
+                        CreateResource("Wall", location, transform);
+                        break;
+                }
+            }
+        }
+
+        // Create 1-2 loot chests
+        int chests = Random.Range(1, 2);
+        for (int i = 0; i < chests; i++)
+        {
+            GameObject go = CreateResource("Chest", GetRandomPoint(), transform);
+            Provider provider = go.AddComponent<Provider>();
+            provider.DropEntries.Add(new Provider.DropEntry("Knife", 1, 1));
+
+            string[] options = { "Knife", "Money", "Bread" };
+            provider.DropEntries.Add(new Provider.DropEntry(options[Random.Range(0, options.Length)], 1, 1));
+            Providers.Add(provider);
+        }
     }
 
     /// <summary>
@@ -170,46 +246,7 @@ public class MapController : MonoBehaviour
         DrawLineVertical(0, 0, YSize);
         DrawLineVertical(XSize - 1, 0, YSize);
     }
-
-    private void DrawForest(int num)
-    {
-        // Draw at random, each tree for all trees
-        for (int i = 0; i < num; i++)
-        {
-            GameObject go = CreateTile("Tree", GetRandomPoint(), transform);
-            Provider provider = go.GetComponent<Provider>();
-            provider.DropEntries.Add(new Provider.DropEntry(fruits[Random.Range(0, fruits.Length)], 1, 1));
-            Providers.Add(provider);
-
-            // Add a series of bushes to each tree.
-            float offset = -2;
-
-            go = CreateTile("Bush", go.transform.position + new Vector3(offset, 0, -offset), transform);
-            Providers.Add(go.GetComponent<Provider>());
-
-            go = CreateTile("Bush", go.transform.position + new Vector3(-offset, 0, offset), transform);
-            Providers.Add(go.GetComponent<Provider>());
-
-            go = CreateTile("Bush", go.transform.position + new Vector3(offset, 0, offset), transform);
-            Providers.Add(go.GetComponent<Provider>());
-
-            go = CreateTile("Bush", go.transform.position + new Vector3(-offset, 0, -offset), transform);
-            Providers.Add(go.GetComponent<Provider>());
-        }
-    }
-
-    private void DrawLake(Vector3 position, Vector2 dimensions)
-    {
-        for (int y = 0; y < (int)dimensions.y; y++)
-        {
-            for (int x = 0; x < (int)dimensions.x; x++)
-            {
-                GameObject go = CreateTile("Water", position + new Vector3(x, -1f, y), transform);
-                Providers.Add(go.GetComponent<Provider>());
-            }
-        }
-    }
-
+    
     /// <summary>
     /// adds walls in a horizontal line
     /// </summary>
@@ -220,7 +257,7 @@ public class MapController : MonoBehaviour
     {
         for (int i = x; i < length + x; i++)
         {
-            map[i][y] = MapTile.Wall;
+            mapData[i][y] = MapTile.Wall;
         }
     }
     
@@ -234,7 +271,7 @@ public class MapController : MonoBehaviour
     {
         for (int i = y; i < length + y; i++)
         {
-            map[x][i] = MapTile.Wall;
+            mapData[x][i] = MapTile.Wall;
         }
     }
 }

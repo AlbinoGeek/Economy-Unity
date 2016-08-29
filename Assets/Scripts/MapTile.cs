@@ -7,6 +7,9 @@
 /// </summary>
 public enum MapTile
 {
-    None,
-    Wall
+    Dirt,
+    Water,
+    Tree,
+    Bush,
+    Wall,
 }

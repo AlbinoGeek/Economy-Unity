@@ -8,6 +8,12 @@
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class LogEntry
 {
+    public enum MessageType
+    {
+        Debug,
+        Info,
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="LogEntry" /> class given a message 
     /// </summary>
@@ -23,7 +29,7 @@ public class LogEntry
     /// </summary>
     /// <param name="message">description of entry</param>
     /// <param name="color">color to write entry in</param>
-    public LogEntry(string message, UnityEngine.Color color) : this(message)
+    public LogEntry(string message, string color) : this(message)
     {
         Color = color;
     }
@@ -31,12 +37,14 @@ public class LogEntry
     /// <summary>
     /// Gets color to draw in
     /// </summary>
-    public UnityEngine.Color Color { get; private set; }
+    public string Color { get; private set; } = "white";
 
     /// <summary>
     /// Gets textual description
     /// </summary>
-    public string Message { get; private set; }
+    public string Message { get; private set; } = string.Empty;
+
+    public MessageType Type { get; private set; } = MessageType.Info;
 
     /// <summary>
     /// Gets time entry was created
@@ -56,6 +64,6 @@ public class LogEntry
 
     public override string ToString()
     {
-        return string.Format("{0}: {1}", TimeStamp, Message);
+        return $"{TimeStamp}: {Message}";
     }
 }
