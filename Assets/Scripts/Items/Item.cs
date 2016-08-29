@@ -2,6 +2,7 @@
 //     Copyright (c) Mewzor Holdings Inc. All rights reserved.
 // </copyright>
 using System.Collections.Generic;
+using System.Linq;
 
 /// <summary>
 /// represents a thing in the world that can be traded or looted by \ref Agent
@@ -13,11 +14,47 @@ public class Item
     public static Item Clone(Item source)
     {
         Item item = new Item(source.Name);
-        item.Attributes = source.Attributes;
         item.Quantity = 1;
         item.Value = source.Value;
         item.Weight = source.Weight;
         return item;
+    }
+
+    private static List<ItemBlueprint> Blueprints;
+    private static List<KeyValuePair<int, ItemAttribute>> BlueprintAttributes;
+
+    public static ItemBlueprint GetBlueprint(string name)
+    {
+        // Prepare cache if it's missing
+        if (Blueprints == null)
+        {
+            Blueprints = new List<ItemBlueprint>();
+            BlueprintAttributes = new List<KeyValuePair<int, ItemAttribute>>();
+        }
+
+        // First, check our cache
+        ItemBlueprint blueprint = Blueprints.Where(x => x.Name == name).FirstOrDefault();
+
+        // Next, load it if we have to
+        if (blueprint == null)
+        {
+            blueprint = Database.GetConnection("Items.db").Table<ItemBlueprint>().Where(x => x.Name == name).FirstOrDefault();
+
+            if (blueprint != null)
+            {
+                // Add it to our cache
+                Blueprints.Add(blueprint);
+
+                // Optimization: Load our attributes once on load
+                var query = Database.GetConnection("Items.db").Table<ItemAttribute>().Where(x => x.ItemId == blueprint.Id);
+                foreach (var result in query)
+                {
+                    BlueprintAttributes.Add(new KeyValuePair<int, ItemAttribute>(blueprint.Id, result));
+                }
+            }
+        }
+
+        return blueprint;
     }
 
     /// <summary>
@@ -26,11 +63,8 @@ public class Item
     /// <param name="name">name of \ref ItemBlueprint to load from</param>
     public Item(string name)
     {
-        Name = name;
+        ItemBlueprint blueprint = GetBlueprint(name);
         
-        // Load base properties from the database
-        ItemBlueprint blueprint = Database.GetConnection("Items.db").Table<ItemBlueprint>().Where(x => x.Name == name).FirstOrDefault();
-
         // If we could not load the item from database
         if (blueprint == null)
         {
@@ -38,18 +72,13 @@ public class Item
             UnityEngine.Debug.LogError(string.Format("Item with name {0} could not be found.", name));
         }
 
+        Id = blueprint.Id;
+        Name = name;
         Value = blueprint.Value;
         Weight = blueprint.Weight;
-
-        // Load Attributes from the database
-        var query = Database.GetConnection("Items.db").Table<ItemAttribute>().Where(x => x.ItemId == blueprint.Id);
-        foreach (var result in query)
-        {
-            Attributes.Add(result);
-        }
     }
 
-    public List<ItemAttribute> Attributes { get; private set; } = new List<ItemAttribute>();
+    public int Id { get; private set; } = -1;
 
     /// <summary>
     /// Gets name, unique, same as file
@@ -73,11 +102,12 @@ public class Item
 
     public string GetAttribute(string key)
     {
-        for (int i = 0; i < Attributes.Count; i++)
+        var list = BlueprintAttributes.Where(x => x.Key == Id);
+        foreach (KeyValuePair<int, ItemAttribute> attribute in list)
         {
-            if (Attributes[i].Key == key)
+            if (attribute.Value.Key == key)
             {
-                return Attributes[i].Value;
+                return attribute.Value.Value;
             }
         }
 
