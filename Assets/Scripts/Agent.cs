@@ -286,8 +286,8 @@ public class Agent : GlobalBehaviour
         }
 
         // Consume standard resources
-        calories -= 12f * Time.fixedDeltaTime;
-        hydration -= 8f * Time.fixedDeltaTime;
+        calories -= 6f * Time.fixedDeltaTime;
+        hydration -= 4f * Time.fixedDeltaTime;
 
         // If we didn't take an action, move.
         if (actionsTaken == 0 &&
@@ -326,8 +326,8 @@ public class Agent : GlobalBehaviour
             rigidbody.velocity += 5f * transform.TransformDirection(Vector3.forward * Time.fixedDeltaTime * MoveSpeed);
             
             // Consume standard resources
-            calories -= 10f * Time.fixedDeltaTime * rigidbody.velocity.magnitude;
-            hydration -= 8f * Time.fixedDeltaTime * rigidbody.velocity.magnitude;
+            calories -= 6f * Time.fixedDeltaTime * rigidbody.velocity.magnitude;
+            hydration -= 4f * Time.fixedDeltaTime * rigidbody.velocity.magnitude;
         }
     }
 
