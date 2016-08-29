@@ -10,16 +10,16 @@ using SQLite4Unity3d;
 public class ItemAttribute
 {
     [PrimaryKey, AutoIncrement]
-    public int Id { get; set; }
+    public int Id { get; private set; }
 
     /// <summary>
     /// Gets or sets reference to \ref ItemBlueprint by Id
     /// </summary>
-    public int ItemId { get; set; }
+    public int ItemId { get; private set; }
 
-    public string Key { get; set; }
+    public string Key { get; private set; }
 
-    public string Value { get; set; }
+    public string Value { get; private set; }
 
     /// <summary>
     /// exists for debugging

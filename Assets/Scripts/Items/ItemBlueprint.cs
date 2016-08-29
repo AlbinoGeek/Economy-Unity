@@ -10,19 +10,19 @@ using SQLite4Unity3d;
 public class ItemBlueprint
 {
     [PrimaryKey, AutoIncrement]
-    public int Id { get; set; }
+    public int Id { get; private set; }
 
-    public string Name { get; set; } = string.Empty;
+    public string Name { get; private set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets relative worth of this item (money is 1, but weights .01)
     /// </summary>
-    public int Value { get; set; } = 0;
+    public int Value { get; private set; } = 0;
 
     /// <summary>
     /// Gets or sets mass of object in lbs, detractor to the observed value
     /// </summary>
-    public float Weight { get; set; } = 0;
+    public float Weight { get; private set; } = 0;
     
     /// <summary>
     /// exists for debugging
