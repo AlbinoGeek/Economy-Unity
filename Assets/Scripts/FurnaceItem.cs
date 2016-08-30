@@ -18,4 +18,10 @@ public struct FurnaceItem
     {
         Cooked++;
     }
+
+    public void Destroy()
+    {
+        Item = null;
+        Cooked = -1;
+    }
 }

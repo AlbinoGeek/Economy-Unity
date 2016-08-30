@@ -15,8 +15,9 @@ public class Agent : GlobalBehaviour
 {
     private static string[] foods = { "Berry", "Bread", "Apple", "Coconut", "Mango", "Fish (Cooked)" };
     private static string[] tradable = {
-        "Bread", "Berry", "Apple", "Coconut", "Mango", "Water", 
-        "Log", "Plank", "Leaf", "Stick",
+        "Bread", "Berry", "Apple", "Coconut", "Mango", "Water",
+        ////"Log",
+        "Plank", "Leaf", "Stick",
         "Stone (Flat)", "Stone (Round)",
         "Fish (Raw)", "Fish (Cooked)",
         //// "Knife", "Stone (Chipped)",
@@ -108,6 +109,11 @@ public class Agent : GlobalBehaviour
         return go;
     }
 
+    /// <summary>
+    /// number of actions taken in the last .1 seconds
+    /// </summary>
+    private int actionsTaken = 0;
+
     private new Rigidbody rigidbody;
 
     #region Unity
@@ -144,13 +150,14 @@ public class Agent : GlobalBehaviour
         InvokeRepeating("Live", .1f, .1f);
     }
 
-    private int actionsTaken = 0;
-
+    private string lastTrade = string.Empty;
     /// <summary>
     /// takes a step in the simulation
     /// </summary>
     private void Live()
     {
+        actionsTaken = 0;
+
         // Dead things don't take turns.
         if (!Alive)
         {
@@ -170,14 +177,14 @@ public class Agent : GlobalBehaviour
                 log.Append($"{name} has died of {cause}", "red");
 
                 color.a = .3f;
-                players.UpdateCanvas(this);
+                players.UpdateAllCanvas();
             }
 
             return;
         }
 
         // If we have met our destination, set a new one
-        if (Vector3.Distance(transform.position, Destination) < 1.5f)
+        if (Vector3.Distance(transform.position, Destination) < 1f)
         {
             while (true)
             {
@@ -202,12 +209,13 @@ public class Agent : GlobalBehaviour
 
         // Consume food to compensate
         int totalfoods = 0;
-        if (calories < 50)
+        foreach (string food in foods)
         {
-            foreach (string food in foods)
+            var foodCount = inventory.Count(food);
+            totalfoods += foodCount;
+
+            if (calories < 50)
             {
-                var foodCount = inventory.Count(food);
-                totalfoods += foodCount;
                 if (foodCount > 0)
                 {
                     Item item = inventory.Find(food);
@@ -222,31 +230,25 @@ public class Agent : GlobalBehaviour
         {
             if (inventory.Remove("Water", 1))
             {
-                hydration += 150;
+                hydration += 200;
             }
         }
-
-        // Count cookable items
-        actionsTaken = 0;
-
-        if (Alive && LastActionTime < Time.timeSinceLevelLoad)
+        
+        if (LastActionTime < Time.timeSinceLevelLoad)
         {
             Cook(totalfoods);
-
-            var nearbyAgents = GetNeightbors(2);
-
+            
             // Remove ourselves from the list
+            var nearbyAgents = GetNeightbors(1);
             nearbyAgents = nearbyAgents.Where(agent => agent != this);
 
             // 1) Try to loot dead bodies
-            var dead = nearbyAgents.Where(agent => !agent.Alive);
-            actionsTaken += Loot(dead);
+            actionsTaken += Loot(nearbyAgents.Where(agent => !agent.Alive));
 
             // 2) Try to collect resources from the environment
             if (actionsTaken == 0)
             {
-                var nearbyProviders = GetNearbyProviders(2);
-                actionsTaken += CollectFrom(nearbyProviders);
+                actionsTaken += CollectFrom(GetNearbyProviders(2));
             }
 
             // 3) Try to trade with people near us
@@ -254,19 +256,23 @@ public class Agent : GlobalBehaviour
             {
                 var alive = nearbyAgents.Where(agent => agent.Alive);
                 actionsTaken += TradeWith(alive);
+                
+                if (actionsTaken > 0)
+                {
+                    //move us towards the destination in question, if we're facing it.
+                    rigidbody.velocity += 10f * transform.TransformDirection(Vector3.forward * Time.fixedDeltaTime * MoveSpeed);
+                }
 
                 // 4) If we are getting desperate, try to steal...
-                if (actionsTaken == 0 &&
-                    inventory.Count("Money") < 4 &&
-                    (inventory.Count("Bread") < 3 || inventory.Count("Water") < 5))
+                if (actionsTaken == 0 && (totalfoods < 5 || inventory.Count("Water") < 5))
                 {
                     actionsTaken += StealFrom(alive);
                 }
             }
-
+            
             if (actionsTaken > 0)
             {
-                LastActionTime = Time.timeSinceLevelLoad + 6;
+                LastActionTime = Time.timeSinceLevelLoad + (6 * actionsTaken);
             }
         }
     }
@@ -290,8 +296,7 @@ public class Agent : GlobalBehaviour
         hydration -= 4f * Time.fixedDeltaTime;
 
         // If we didn't take an action, move.
-        if (actionsTaken == 0 &&
-            LastActionTime - 3f < Time.timeSinceLevelLoad)
+        if (actionsTaken == 0 && LastActionTime - 3f < Time.timeSinceLevelLoad)
         {
             // Point us towards our destination
             MoveTowardsDestination();
@@ -351,8 +356,7 @@ public class Agent : GlobalBehaviour
 
     private void Cook(int totalfoods)
     {
-        var cooklist = inventory.Items.Where(x => cookable.Contains(x.Name));
-        int countCookable = cooklist.Sum(x => x.Quantity);
+        Item toCook = inventory.Items.FirstOrDefault(x => cookable.Contains(x.Name));
 
         // Find nearest fire
         Provider fire = map.Providers.Where(x => x.gameObject.name == "Tile_Fire")
@@ -360,7 +364,7 @@ public class Agent : GlobalBehaviour
                                      .FirstOrDefault();
 
         // We're low on food, and have something to cook
-        if (totalfoods < 10 && countCookable > 0)
+        if (totalfoods < 10 && toCook != null)
         {
             // If we couldn't find a fire, we should make one
             if (fire == null)
@@ -372,7 +376,7 @@ public class Agent : GlobalBehaviour
                 if (!haveSticks && haveBranch)
                 {
                     // Crafting counts as two actions
-                    actionsTaken += 2;
+                    actionsTaken++;
 
                     // Consume a branch and create 1-2 sticks
                     int count = Random.Range(1, 3);
@@ -400,10 +404,7 @@ public class Agent : GlobalBehaviour
                 }
             }
         }
-
-        // If we have something to cook
-        Item toCook = cooklist.FirstOrDefault();
-
+        
         // We also need something to cook with
         Item cookWith = inventory.Find("Stick") ?? inventory.Find("Branch");
         if (cookWith == null)
@@ -426,10 +427,10 @@ public class Agent : GlobalBehaviour
             if (Vector3.Distance(transform.position, fire.transform.position) < 1f)
             {
                 // Cooking counts as 4 actions
-                actionsTaken += 2;
+                actionsTaken += 4;
 
                 // If there is space in the furnace, add our item
-                if (toCook != null && furnace.Contents.Count <= 2)
+                if (toCook != null)
                 {
                     furnace.Add(Item.Clone(toCook));
                     inventory.Remove(toCook.Name, 1);
@@ -437,7 +438,7 @@ public class Agent : GlobalBehaviour
                 }
 
                 // Add more fuel to continue cooking
-                if (cookWith != null && furnace.Fuel < 10 && furnace.Contents.Count > 0)
+                if (cookWith != null && furnace.Fuel <= 5 && furnace.Contents.Sum(x => x.Item.Quantity) > 0)
                 {
                     furnace.Fuel += (5 * int.Parse(cookWith.GetAttribute("Fuel")));
                     inventory.Remove(cookWith.Name, 1);
@@ -465,19 +466,19 @@ public class Agent : GlobalBehaviour
             {
                 continue;
             }
-
-            count++;
-
+            
             // Takes item from provider as per its rules
-            Provider.DropEntry drop = provider.GetDrop();
+            var drop = provider.GetDrop();
             if (drop != null)
             {
+                count++;
                 inventory.Add(drop.ItemName, drop.StockPerUse);
                 log.Append($"{name} collected {drop.ItemName} x{drop.StockPerUse} from {provider.gameObject.name}", "#66CC66");
             }
 
             return count;
         }
+
         return count;
     }
 
@@ -525,70 +526,98 @@ public class Agent : GlobalBehaviour
     private int TradeWith(IEnumerable<Agent> nearbyAgents)
     {
         int count = 0;
-
-        // If we have run out of money stop trading
-        if (inventory.Count("Money") <= 1)
-        {
-            return count;
-        }
-
         for (int i = 0; i < nearbyAgents.Count(); i++)
         {
             Agent other = nearbyAgents.ElementAt(i);
 
-            // Try to trade each item
-            for (int j = 0; j < tradable.Length; j++)
+            // Try to find an item we want
+            Item theirs = other.inventory.Items.Where(x => tradable.Contains(x.Name))
+                                               .OrderBy(x => Random.value)
+                                               .FirstOrDefault();
+            
+            if (theirs != null)
             {
-                // If we have run out of money stop trading
-                if (inventory.Count("Money") <= 1)
+                // Don't trade away our last five Bread or Water
+                if (theirs.Quantity < 5 &&
+                   (theirs.Name == "Bread" ||
+                    theirs.Name == "Water"))
                 {
-                    return count;
+                    continue;
+                }
+                
+                // We don't want something we have too much of
+                if (inventory.Count(theirs.Name) > 5)
+                {
+                    continue;
                 }
 
-                Item ours = inventory.Find(tradable[j]);
-                Item theirs = other.inventory.Find(tradable[j]);
+                float cost = theirs.Value;
 
-                if (ours != null &&
-                    theirs != null &&
-                    ours.Quantity < 5)
+                // Add a modifier of supply vs demand
+                cost *= (theirs.Quantity / Mathf.Max(inventory.Count(theirs.Name), .1f));
+
+                // Charge between 20% and 200% based on this factor
+                cost = Mathf.Clamp(cost, theirs.Value * .2f, theirs.Value * 2.5f);
+
+                // Skip anything over 200% markup
+                if (cost > theirs.Value * 2f)
                 {
-                    // Don't trade away your last X
-                    if ((tradable[j] == "Bread" ||
-                        tradable[j] == "Water") &&
-                        theirs.Quantity < 5)
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    float cost = ours.Value * 10;
+                // Don't trade with the same person twice in a row
+                if (other.name == lastTrade)
+                {
+                    continue;
+                }
 
-                    // Scale it based on supply vs demand + random
-                    cost *= Mathf.Clamp(1f + (ours.Quantity / theirs.Quantity), .1f, 2.1f);
-
-                    // Don't trade when over 200% cost
-                    if (cost > (ours.Value * 10 * 2))
-                    {
-                        continue;
-                    }
-
-                    // Don't trade where we can't afford it
-                    if (inventory.Count("Money") < cost)
+                TradeOffer trade = new TradeOffer(this, other);
+                trade.BuyEntry = new TradeOfferItem(theirs, 1);
+                    
+                // Add tradable items until we hit expected value
+                var myItems = inventory.Items.Where(x => tradable.Contains(x.Name));
+                foreach (Item item in myItems)
+                {
+                    // Don't trade the item we want
+                    if (item.Name == theirs.Name)
                     {
                         continue;
                     }
                     
+                    // Don't add an item whose value is greater than the whole trade
+                    if (item.Value > cost)
+                    {
+                        continue;
+                    }
+
+                    int trading = 0;
+                    int total = item.Quantity;
+                    while (trade.Value <= cost && trading <= total)
+                    {
+                        trade.Add(item.Name, 1);
+                        trading++;
+                    }
+                        
+                    // We can stop adding items
+                    if (trade.Value >= cost)
+                    {
+                        break;
+                    }
+                }
+
+                if (trade.Value < cost || trade.SellEntries.Count == 0)
+                {
+                    // We can't trade!
+                    return count;
+                }
+
+                if (trade.Commit())
+                {
+                    lastTrade = other.name;
+                    log.Append($"{name} bought 1x {trade.BuyEntry.ItemName} for {trade.ToString()} from {other.name}", "#9999FF");
+
                     count++;
-
-                    inventory.Find("Money").Quantity -= (int) cost;
-                    other.inventory.Find("Money").Quantity += (int) cost;
-
-                    inventory.Add(tradable[j], 1);
-                    other.inventory.Remove(tradable[j], 1);
-
-                    log.Append($"{name} bought {tradable[j]} from {other.name}", "#9999FF");
-
-                    //move us towards the destination in question, if we're facing it.
-                    rigidbody.velocity += 20f * transform.TransformDirection(Vector3.forward * Time.fixedDeltaTime * MoveSpeed);
+                    return count;
                 }
             }
         }
@@ -598,35 +627,26 @@ public class Agent : GlobalBehaviour
     
     private int StealFrom(IEnumerable<Agent> nearbyAgents)
     {
-        if (nearbyAgents.Count() == 0)
-        {
-            return 0;
-        }
-
-        Agent other = nearbyAgents.ElementAt(0);
-
         // Attempt to steal food or water, whatever we need most.
-        string thingToSteal = string.Empty;
-        if (inventory.Count("Bread") < inventory.Count("Water"))
+        string thingToSteal = inventory.Count("Bread") < inventory.Count("Water") ? "Bread" : "Water";
+
+        Agent other = nearbyAgents.FirstOrDefault();
+        if (other == null)
         {
-            thingToSteal = "Bread";
-        }
-        else
-        {
-            thingToSteal = "Water";
+            // We didn't find anyone to steal from
+            return 0;
         }
 
         Item theirs = other.inventory.Find(thingToSteal);
         if (theirs == null)
         {
-            // They didn't have what we wanted to steal.
+            // We didn't find what we wanted to steal
             return 0;
         }
 
-        // Did we succeed?
-        if (Random.Range(0, 1f) > .7f)
+        // Did we succeed? (30%)
+        if (Random.value > .7f)
         {
-            // We succeeded!
             inventory.Add(thingToSteal, 1);
             other.inventory.Remove(thingToSteal, 1);
 
@@ -642,14 +662,14 @@ public class Agent : GlobalBehaviour
             {
                 var str = weapon.GetAttribute("Damage");
                 var dmg = str.Split('~');
-                int damage = Random.Range(int.Parse(dmg[0]), int.Parse(dmg[1]));
+                int damage = 2 * Random.Range(int.Parse(dmg[0]), int.Parse(dmg[1]));
                 
-                log.Append($"{name} TOOK {damage} damage from {other.name}'s {weapon.Name}!", "#99FFF");
+                log.Append($"{name} TOOK {damage} damage from {other.name}'s {weapon.Name}!", "#99FFFF");
                 health -= damage;
             }
             else
             {
-                health--;
+                health -= 2;
             }
         }
 
@@ -661,6 +681,6 @@ public class Agent : GlobalBehaviour
 
     public override string ToString()
     {
-        return $"$: {inventory.Count("Money")} | F: {inventory.Count("Berry") + inventory.Count("Bread")} | W: {inventory.Count("Water")} | {name}";
+        return $"F: {inventory.Count("Berry") + inventory.Count("Bread")} | W: {inventory.Count("Water")} | {name}";
     }
 }

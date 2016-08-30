@@ -103,9 +103,9 @@ public class MapController : GlobalBehaviour
         }
         
         // Generate three water bodies and fill them
-        GenerateLake(Random.Range(5, XSize - 5), Random.Range(5, YSize - 5));
-        GenerateLake(Random.Range(5, XSize - 5), Random.Range(5, YSize - 5));
-        GenerateLake(Random.Range(5, XSize - 5), Random.Range(5, YSize - 5));
+        GenerateLake(Random.Range(15, XSize - 15), Random.Range(15, YSize - 15));
+        GenerateLake(Random.Range(15, XSize - 15), Random.Range(15, YSize - 15));
+        GenerateLake(Random.Range(15, XSize - 15), Random.Range(15, YSize - 15));
         FillInLakes();
         FillInLakes();
 
@@ -157,15 +157,22 @@ public class MapController : GlobalBehaviour
                 {
                     case MapTile.Water:
                         tile = CreateResource("Water", location + Vector3.down, transform);
-                        Providers.Add(tile.GetComponent<Provider>());
+                        provider = tile.GetComponent<Provider>();
+                        provider.Add("Water", 12, 3);
+                        provider.Add("Fish (Raw)", Random.Range(1, 4), 1);
+                        Providers.Add(provider);
                         break;
 
                     case MapTile.Tree:
                         tile = CreateResource("Tree", location + (Vector3.up / 3f), transform);
                         provider = tile.GetComponent<Provider>();
-
-                        // Add 1-4 random fruit to this tree
-                        provider.DropEntries.Add(new Provider.DropEntry(fruits[Random.Range(0, fruits.Length)], Random.Range(1, 4), 1));
+                        provider.Add("Log", 1, 1);
+                        provider.Add("Branch", Random.Range(1, 4), 2);
+                        if (Random.value > .5f)
+                        {
+                            provider.Add("Stick", 1, 1);
+                        }
+                        provider.Add(fruits[Random.Range(0, fruits.Length)], Random.Range(1, 4), 1);
                         Providers.Add(provider);
                         
                         // Also draw dirt under tree
@@ -173,8 +180,11 @@ public class MapController : GlobalBehaviour
 
                     case MapTile.Bush:
                         tile = CreateResource("Bush", location + (Vector3.down / 2), transform);
-                        Providers.Add(tile.GetComponent<Provider>());
-
+                        provider = tile.GetComponent<Provider>();
+                        provider.Add("Twig", Random.Range(1, 4), 2);
+                        provider.Add("Berry", Random.Range(3, 8), 4);
+                        Providers.Add(provider);
+                        
                         // Also draw dirt under bush
                         goto case MapTile.Dirt;
 
@@ -208,11 +218,11 @@ public class MapController : GlobalBehaviour
         for (int i = 0; i < chests; i++)
         {
             GameObject go = CreateResource("Chest", GetRandomPoint(), transform);
-            Provider provider = go.AddComponent<Provider>();
-            provider.DropEntries.Add(new Provider.DropEntry("Knife", 1, 1));
+            Provider provider = go.GetComponent<Provider>();
+            provider.Add("Knife", 1, 1);
 
-            string[] options = { "Knife", "Money", "Bread" };
-            provider.DropEntries.Add(new Provider.DropEntry(options[Random.Range(0, options.Length)], 1, 1));
+            string[] options = { "Knife", "Bread", "Fish (Cooked)" };
+            provider.Add(options[Random.Range(0, options.Length)], 1, 1);
             Providers.Add(provider);
         }
     }
@@ -237,7 +247,7 @@ public class MapController : GlobalBehaviour
         int y = 0;
         int count = 0;
         int lastDir = 0;
-        while (count < 50)
+        while (count < 30)
         {
             int dir = Random.Range(0, 4);
 

@@ -2,7 +2,6 @@
 //     Copyright (c) Mewzor Holdings Inc. All rights reserved.
 // </copyright>
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -25,17 +24,27 @@ public class Provider : MonoBehaviour
         /// <summary>
         /// creates a representation of this item
         /// </summary>
-        public string ItemName = string.Empty;
+        public string ItemName { get; private set; }
 
         /// <summary>
         /// how many items can be taken before depleted
         /// </summary>
-        public int ItemStock = 0;
+        public int ItemStock { get; private set; }
 
         /// <summary>
         /// how many items are collected per use
         /// </summary>
-        public int StockPerUse = 0;
+        public int StockPerUse { get; private set; }
+
+        public void Decrease(int amount)
+        {
+            ItemStock -= amount;
+        }
+
+        public void Increase(int amount)
+        {
+            ItemStock += amount;
+        }
     }
 
     public List<DropEntry> DropEntries = new List<DropEntry>();
@@ -56,7 +65,7 @@ public class Provider : MonoBehaviour
         {
             if (DropEntries[i].ItemName == name)
             {
-                DropEntries[i].ItemStock += stock;
+                DropEntries[i].Increase(stock);
                 return;
             }
         }
@@ -65,17 +74,18 @@ public class Provider : MonoBehaviour
 
     public DropEntry GetDrop()
     {
-        var randomlyOrdered = DropEntries.OrderBy(i => Random.value);
-        foreach (DropEntry dropEntry in randomlyOrdered)
+        for (int i = 0; i < DropEntries.Count; i++)
         {
-            if (dropEntry.ItemStock <= 0)
+            if (DropEntries[i].ItemStock > 0)
             {
-                DropEntries.Remove(dropEntry);
-                continue;
+                DropEntries[i].Decrease(DropEntries[i].StockPerUse);
+                return DropEntries[i];
             }
-
-            dropEntry.ItemStock -= dropEntry.StockPerUse;
-            return dropEntry;
+            else
+            {
+                DropEntries.RemoveAt(i);
+                i--;
+            }
         }
 
         return null;

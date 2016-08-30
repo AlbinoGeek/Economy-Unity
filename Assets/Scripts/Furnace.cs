@@ -49,17 +49,23 @@ public class Furnace : MonoBehaviour
 
         for (int i = 0; i < Contents.Count; i++)
         {
-            Contents[i].Cook();
-            Fuel--;
-
+            if (Contents[i].Item == null)
+            {
+                continue;
+            }
+            
             // It takes at least two rounds to cook
             if (Contents[i].Cooked > 240)
             {
                 string name = Contents[i].Item.Name.Split('(')[0].TrimEnd(' ');
                 
                 provider.Add(name + " (Cooked)", 1, 1);
-                Contents.RemoveAt(i);
-                i--;
+                Contents[i].Destroy();
+            }
+            else
+            {
+                Contents[i].Cook();
+                Fuel--;
             }
         }
 

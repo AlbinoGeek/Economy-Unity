@@ -85,7 +85,6 @@ public class GameController : GlobalBehaviour
             go.transform.position = map.GetRandomPoint();
 
             // Give them a fair amount of resources
-            agent.inventory.Add("Money", Random.Range(50, 50));
             agent.inventory.Add("Bread", Random.Range(10, 10));
             agent.inventory.Add("Water", Random.Range(20, 20));
 
@@ -109,8 +108,8 @@ public class GameController : GlobalBehaviour
 
     private void FixedUpdate()
     {
-        // If it has been 10 rounds since our last event, trigger one
-        if (Time.timeSinceLevelLoad > timeSinceLastEvent + 60f)
+        // If it has been 20 rounds since our last event, trigger one
+        if (Time.timeSinceLevelLoad > timeSinceLastEvent + 120f)
         {
             timeSinceLastEvent = Time.timeSinceLevelLoad;
             EventType worldEvent = (EventType)Random.Range(0, 3);
@@ -129,12 +128,12 @@ public class GameController : GlobalBehaviour
                         Provider provider = go.GetComponent<Provider>();
 
                         // Replenish the primary stock of Water (Water)
-                        provider.DropEntries[0].ItemStock += 3;
+                        provider.DropEntries[0].Increase(3);
 
                         // If there is a second item, replenish some of it too
                         if (provider.DropEntries.Count == 2)
                         {
-                            provider.DropEntries[1].ItemStock += 1;
+                            provider.DropEntries[1].Increase(1);
                         }
                     }
                     break;

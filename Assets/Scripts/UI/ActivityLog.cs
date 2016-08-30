@@ -60,6 +60,12 @@ public class ActivityLog : MonoBehaviour
         List<int> picked = new List<int>();
         for (int i = entries.Count - 1; i > 0; i--)
         {
+            // Skip CollectFrom
+            if (entries[i].Color == "#66CC66")
+            {
+                continue;
+            }
+
             picked.Add(i);
             count++;
 

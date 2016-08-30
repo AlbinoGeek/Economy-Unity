@@ -89,7 +89,7 @@ public class Item
     public int Quantity { get; internal set; } = 1;
 
     /// <summary>
-    ///  Gets relative trading cost in Money
+    /// Gets relative trading value
     /// </summary>
     public int Value { get; private set; } = 0;
 

@@ -11,6 +11,18 @@ using System.Linq;
 [System.Serializable]
 public class Inventory
 {
+    public static bool Transfer(Inventory from, Inventory to, string itemName, int quantity)
+    {
+        if (from.Count(itemName) > 0)
+        {
+            to.Add(itemName, quantity);
+            from.Remove(itemName, quantity);
+            return true;
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// Gets list of items we hold
     /// </summary>

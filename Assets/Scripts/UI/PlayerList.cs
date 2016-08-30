@@ -66,19 +66,7 @@ public class PlayerList : MonoBehaviour
 
         return false;
     }
-
-    public void UpdateCanvas(Agent agent)
-    {
-        for (int i = 0; i < players.Count; i++)
-        {
-            if (players[i].Agent == agent)
-            {
-                players[i].CanvasElement.color = agent.color;
-                players[i].CanvasElement.text = players[i].Agent.ToString();
-            }
-        }
-    }
-
+    
     #region Unity
     private void Start()
     {
@@ -97,6 +85,7 @@ public class PlayerList : MonoBehaviour
             }
 
             players[i].CanvasElement.text = players[i].Agent.ToString();
+            players[i].CanvasElement.color = players[i].Agent.color;
         }
     }
 }

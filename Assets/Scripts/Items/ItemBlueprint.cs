@@ -15,7 +15,7 @@ public class ItemBlueprint
     public string Name { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets relative worth of this item (money is 1, but weights .01)
+    /// Gets or sets relative worth of this item
     /// </summary>
     public int Value { get; private set; } = 0;
 
