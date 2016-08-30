@@ -13,44 +13,51 @@ using UnityEngine;
 public class GameController : GlobalBehaviour
 {
     /// <summary>
-    /// list of players to be created at the start of the game
+    /// list of players with a color to be created at the start of the game
     /// </summary>
-    private static string[] population =
+    private static string[] heroic =
     {
         "AngryAlbino",
-        "HappyGiant",
-        "JohnGeese",
-        "MewzorMewMew",
-        "StabbyGaming",
-        "Raiden",
-        "b4u7",
-        "Big Hoss",
-        "divideddarko",
         "deccer",
         "E.B.",
         "GoodGuyWill",
+        "JohnGeese",
+        "Malscythe",
+        "matt",
+        "MewzorMewMew",
+        "Raiden",
+        "RobbieW",
+        "StabbyGaming",
+        "Westermin",
+        "wubbalubbadubdub",
+        "vassvik",
+    };
+
+    /// <summary>
+    /// list of NPCs to be created at the start of the game
+    /// </summary>
+    private static string[] population =
+    {
+        "b4u7",
+        "Big Hoss",
+        "divideddarko",
+        "HappyGiant",
         "HD",
         "human_supremacist",
         "Le Chat",
-        "Malscythe",
-        "matt",
         "Mirage",
         "Mobilpadde",
         "Movariant",
         "Prxy",
-        "RobbieW",
         "romgerman",
-        "SadCloud123",
         "sean",
+        "SadCloud123",
         "Sense",
-        "Westermin",
         "WildNoob",
-        "wubbalubbadubdub",
-        "vassvik",
     };
-    
+
     private float timeSinceLastEvent;
-    
+
     #region Unity
     protected override void Awake()
     {
@@ -67,43 +74,70 @@ public class GameController : GlobalBehaviour
         StartCoroutine("CreateAgents");
     }
 
+    private GameObject agentContainer;
+
+    private static readonly float[] Hues = {
+        .09f,
+        .00f,
+        .16f,
+        .25f,
+        .80f,
+        .63f,
+        .50f,
+        .90f,
+        .40f,
+        .58f,
+        .02f,
+        .54f,
+        .54f,
+        .58f
+    };
     private IEnumerator CreateAgents()
     {
-        GameObject agentContainer = new GameObject("Agents");
-
-        float hue = 0f;
-        float inc = 1f / population.Length;
-        bool even = true;
-        var pop = population.OrderBy(x => x.Length).Reverse();
-        foreach (string name in pop)
+        agentContainer = new GameObject("Agents");
+        
+        // Create heroic characters (Players) with a colour
+        for (int i = heroic.Length - 1; i >= 0; i--)
         {
-            GameObject go = Agent.Create(name);
-            Agent agent = go.GetComponent<Agent>();
-            go.transform.parent = agentContainer.transform;
-
-            // Position Agents randomly on the map
-            go.transform.position = map.GetRandomPoint();
-
-            // Give them a fair amount of resources
-            agent.inventory.Add("Bread", Random.Range(10, 10));
-            agent.inventory.Add("Water", Random.Range(20, 20));
-
-            // Generate a random color for this agent
-            // TODO(Albino) should be visually unique from all previous colors
-            agent.color = new HSBColor(hue, (even ? .75f : .5f), .75f, 1f).ToColor();
-
-            players.Add(agent);
-            map.Agents.Add(agent);
-            even = !even;
-            hue += inc;
-
+            CreateAgent(heroic[i], new HSBColor(Hues[i], .75f, .75f, 1f).ToColor());
             yield return new WaitForSeconds(.1f);
         }
+        
+        // Create NPCs without a colour for now
+        // TODO(Albino) Find a way to make unique colours so I don't have to have two classes of people
+        var pop = population.OrderByDescending(x => x.Length);
+        foreach (string name in pop)
+        {
+            CreateAgent(name, Color.gray);
+            yield return new WaitForSeconds(.05f);
+        }
+        
         yield return new WaitForSeconds(.1f);
 
         Time.timeScale = 3f;
         log.Append($"{map.Agents.Count} Agents created, Simulating Economy...", "green");
         yield return null;
+    }
+
+    private void CreateAgent(string name, Color color)
+    {
+        GameObject go = Agent.Create(name);
+        Agent agent = go.GetComponent<Agent>();
+        go.transform.parent = agentContainer.transform;
+
+        // Position Agents randomly on the map
+        go.transform.position = map.GetRandomPoint();
+
+        // Give them a fair amount of resources
+        agent.inventory.Add("Bread", Random.Range(10, 10));
+        agent.inventory.Add("Water", Random.Range(10, 10));
+
+        // Generate a random color for this agent
+        // TODO(Albino) should be visually unique from all previous colors
+        agent.color = color;
+
+        players.Add(agent);
+        map.Agents.Add(agent);
     }
 
     private void FixedUpdate()
@@ -128,12 +162,15 @@ public class GameController : GlobalBehaviour
                         Provider provider = go.GetComponent<Provider>();
 
                         // Replenish the primary stock of Water (Water)
-                        provider.DropEntries[0].Increase(3);
-
-                        // If there is a second item, replenish some of it too
-                        if (provider.DropEntries.Count == 2)
+                        if (provider != null && provider.DropEntries.Count > 0)
                         {
-                            provider.DropEntries[1].Increase(1);
+                            provider.DropEntries[0].Increase(3);
+
+                            // If there is a second item, replenish some of it too
+                            if (provider.DropEntries.Count == 2)
+                            {
+                                provider.DropEntries[1].Increase(1);
+                            }
                         }
                     }
                     break;
