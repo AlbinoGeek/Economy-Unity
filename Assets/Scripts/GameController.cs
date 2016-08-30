@@ -18,8 +18,11 @@ public class GameController : GlobalBehaviour
     private static string[] population =
     {
         "AngryAlbino",
+        "HappyGiant",
         "JohnGeese",
+        "MewzorMewMew",
         "StabbyGaming",
+        "Raiden",
         "b4u7",
         "Big Hoss",
         "divideddarko",
@@ -61,7 +64,6 @@ public class GameController : GlobalBehaviour
     /// </summary>
     private void Start()
     {
-        Time.timeScale = .5f;
         StartCoroutine("CreateAgents");
     }
 
@@ -82,10 +84,10 @@ public class GameController : GlobalBehaviour
             // Position Agents randomly on the map
             go.transform.position = map.GetRandomPoint();
 
-            // Give them a random quality starting kit
-            agent.inventory.Add("Money", Random.Range(200, 900));
+            // Give them a fair amount of resources
+            agent.inventory.Add("Money", Random.Range(50, 50));
             agent.inventory.Add("Bread", Random.Range(10, 10));
-            agent.inventory.Add("Water", Random.Range(20, 35));
+            agent.inventory.Add("Water", Random.Range(20, 20));
 
             // Generate a random color for this agent
             // TODO(Albino) should be visually unique from all previous colors
@@ -98,8 +100,9 @@ public class GameController : GlobalBehaviour
 
             yield return new WaitForSeconds(.1f);
         }
+        yield return new WaitForSeconds(.1f);
 
-        Time.timeScale = 2;
+        Time.timeScale = 3f;
         log.Append($"{map.Agents.Count} Agents created, Simulating Economy...", "green");
         yield return null;
     }
