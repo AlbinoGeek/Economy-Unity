@@ -11,26 +11,24 @@ using UnityEngine;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class Furnace : MonoBehaviour
 {
-    [System.Serializable]
-    public class FurnaceItem
-    {
-        public Item Item;
-        public float Cooked;
-    }
+    public List<FurnaceItem> Contents = new List<FurnaceItem>();
 
     public int Fuel = 100;
-
-    public List<FurnaceItem> Contents = new List<FurnaceItem>();
 
     public float LastFueledTime;
 
     public void Add(Item item)
     {
-        var fi = new FurnaceItem();
-        fi.Item = item;
-        Contents.Add(fi);
+        Contents.Add(new FurnaceItem(item));
     }
+
+    private Provider provider;
     
+    private void Awake()
+    {
+        provider = GetComponent<Provider>();
+    }
+
     /// <summary>
     /// moves finished items to Provider
     /// </summary>
@@ -51,15 +49,15 @@ public class Furnace : MonoBehaviour
 
         for (int i = 0; i < Contents.Count; i++)
         {
-            // It takes at least two rounds to cook
-            Contents[i].Cooked += 1;
-            Fuel -= 1;
+            Contents[i].Cook();
+            Fuel--;
 
+            // It takes at least two rounds to cook
             if (Contents[i].Cooked > 240)
             {
                 string name = Contents[i].Item.Name.Split('(')[0].TrimEnd(' ');
                 
-                GetComponent<Provider>().Add(name + " (Cooked)", 1, 1);
+                provider.Add(name + " (Cooked)", 1, 1);
                 Contents.RemoveAt(i);
                 i--;
             }
@@ -67,7 +65,7 @@ public class Furnace : MonoBehaviour
 
         if (Contents.Count == 0)
         {
-            Fuel -= 1;
+            Fuel--;
         }
     }
 }
