@@ -15,7 +15,7 @@ public class GameController : GlobalBehaviour
     /// <summary>
     /// list of players with a color to be created at the start of the game
     /// </summary>
-    private static readonly string[] heroic =
+    private static readonly string[] HeroicPopulation =
     {
         "AngryAlbino",
         "deccer",
@@ -33,7 +33,8 @@ public class GameController : GlobalBehaviour
         "vassvik",
     };
 
-    private static readonly float[] Hues = {
+    private static readonly float[] Hues =
+    {
         .09f,
         .00f,
         .16f,
@@ -53,7 +54,7 @@ public class GameController : GlobalBehaviour
     /// <summary>
     /// list of NPCs to be created at the start of the game
     /// </summary>
-    private static readonly string[] population =
+    private static readonly string[] RegularPopulation =
     {
         "b4u7",
         "Big Hoss",
@@ -76,6 +77,24 @@ public class GameController : GlobalBehaviour
     private GameObject agentContainer;
 
     private float timeSinceLastEvent;
+
+    public enum EventType
+    {
+        /// <summary>
+        /// causes a tree to grow, or bushes to regrow
+        /// </summary>
+        Growth,
+
+        /// <summary>
+        /// causes water bodies to refill and expand
+        /// </summary>
+        Flood,
+
+        /// <summary>
+        /// causes tree/bush to catch fire
+        /// </summary>
+        Fire,
+    }
 
     #region Unity
     protected override void Awake()
@@ -102,12 +121,12 @@ public class GameController : GlobalBehaviour
             EventType worldEvent = (EventType)Random.Range(0, 3);
             switch (worldEvent)
             {
-                case (EventType.Growth):
+                case EventType.Growth:
                     log.Append("Nature is regrowing...", "lightblue");
                     MapEventGrowth();
                     break;
                 
-                case (EventType.Flood):
+                case EventType.Flood:
                     log.Append("It has started raining...", "lightblue");
                     GameObject go = GameObject.Find("Tile_Water");
                     if (go)
@@ -126,9 +145,10 @@ public class GameController : GlobalBehaviour
                             }
                         }
                     }
+
                     break;
 
-                case (EventType.Fire):
+                case EventType.Fire:
                     go = CreateResource("Fire", map.GetRandomPoint(), Quaternion.identity);
                     map.Providers.Add(go.GetComponent<Provider>());
                     log.Append($"A fire has broken out in the world!", "orange");
@@ -143,15 +163,15 @@ public class GameController : GlobalBehaviour
         agentContainer = new GameObject("Agents");
 
         // Create heroic characters (Players) with a colour
-        for (int i = heroic.Length - 1; i >= 0; i--)
+        for (int i = HeroicPopulation.Length - 1; i >= 0; i--)
         {
-            CreateAgent(heroic[i], new HSBColor(Hues[i], .75f, .75f, 1f).ToColor());
+            CreateAgent(HeroicPopulation[i], new HSBColor(Hues[i], .75f, .75f, 1f).ToColor());
             yield return new WaitForSeconds(.1f);
         }
 
         // Create NPCs without a colour for now
         // TODO(Albino) Find a way to make unique colours so I don't have to have two classes of people
-        var pop = population.OrderByDescending(x => x.Length);
+        var pop = RegularPopulation.OrderByDescending(x => x.Length);
         foreach (string name in pop)
         {
             CreateAgent(name, Color.gray);
@@ -223,23 +243,5 @@ public class GameController : GlobalBehaviour
                 Destroy(go);
             }
         }
-    }
-
-    public enum EventType
-    {
-        /// <summary>
-        /// causes a tree to grow, or bushes to regrow
-        /// </summary>
-        Growth, 
-
-        /// <summary>
-        /// causes water bodies to refill and expand
-        /// </summary>
-        Flood,
-
-        /// <summary>
-        /// causes tree/bush to catch fire
-        /// </summary>
-        Fire,
     }
 }

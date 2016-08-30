@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 
+/// represents an object that applies heat to items inside until they are cooked
 /// </summary>
 [DisallowMultipleComponent]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
@@ -17,13 +17,13 @@ public class Furnace : MonoBehaviour
 
     public float LastFueledTime;
 
+    private Provider provider;
+
     public void Add(Item item)
     {
         Contents.Add(new FurnaceItem(item));
     }
 
-    private Provider provider;
-    
     private void Awake()
     {
         provider = GetComponent<Provider>();

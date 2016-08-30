@@ -7,12 +7,15 @@ using UnityEngine;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class GlobalBehaviour : MonoBehaviour
 {
-    protected ActivityLog log;
-    protected GameController game;
-    protected MapController map;
-    protected PlayerList players;
-
     public static Transform GlobalParent;
+
+    protected ActivityLog log;
+
+    protected GameController game;
+
+    protected MapController map;
+
+    protected PlayerList players;
 
     public static GameObject CreateResource(string name, Transform parent)
     {
@@ -45,7 +48,7 @@ public class GlobalBehaviour : MonoBehaviour
         go.name = prefab.name;
         return go;
     }
-
+    
     /// <summary>
     /// UnityEngine.MonoBehaviour.Awake
     /// specifically overwritten by things that implement us

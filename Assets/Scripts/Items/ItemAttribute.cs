@@ -13,12 +13,15 @@ public class ItemAttribute
     public int Id { get; private set; }
 
     /// <summary>
-    /// Gets or sets reference to \ref ItemBlueprint by Id
+    /// Gets reference to \ref ItemBlueprint by Id
     /// </summary>
     public int ItemId { get; private set; }
 
     public string Key { get; private set; }
 
+    /// <summary>
+    /// Gets text stored in database
+    /// </summary>
     public string Value { get; private set; }
 
     /// <summary>

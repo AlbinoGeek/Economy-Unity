@@ -15,12 +15,12 @@ public class ItemBlueprint
     public string Name { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets relative worth of this item
+    /// Gets relative worth of this item
     /// </summary>
     public int Value { get; private set; } = 0;
 
     /// <summary>
-    /// Gets or sets mass of object in lbs, detractor to the observed value
+    /// Gets mass of object in pounds, detracts from observed value
     /// </summary>
     public float Weight { get; private set; } = 0;
     
