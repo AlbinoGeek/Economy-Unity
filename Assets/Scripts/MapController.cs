@@ -103,9 +103,9 @@ public class MapController : GlobalBehaviour
         }
         
         // Generate three water bodies and fill them
-        GenerateLake(Random.Range(15, XSize - 15), Random.Range(15, YSize - 15));
-        GenerateLake(Random.Range(15, XSize - 15), Random.Range(15, YSize - 15));
-        GenerateLake(Random.Range(15, XSize - 15), Random.Range(15, YSize - 15));
+        GenerateLake(XSize / 2, 0);
+        GenerateLake(XSize / 2, 0);
+        GenerateLake(XSize / 2, 0);
         FillInLakes();
         FillInLakes();
 
@@ -295,11 +295,12 @@ public class MapController : GlobalBehaviour
     {
         int neighbors = 0;
 
-        if (mapData[x - 1][y - 1] == tile) neighbors++;
+        //if (mapData[x - 1][y - 1] == tile) neighbors++;
         if (mapData[x - 1][y] == tile) neighbors++;
         if (mapData[x - 1][y + 1] == tile) neighbors++;
 
         if (mapData[x][y - 1] == tile) neighbors++;
+        if (mapData[x][y] == tile) neighbors++;
         if (mapData[x][y + 1] == tile) neighbors++;
 
         if (mapData[x + 1][y - 1] == tile) neighbors++;
@@ -316,7 +317,7 @@ public class MapController : GlobalBehaviour
             for (int x = 1; x < XSize; ++x)
             {
                 // Fill in dirt islands with water
-                if (mapData[x][y] == MapTile.Dirt && FindNeighbors(x, y, MapTile.Water) > 3)
+                if (mapData[x][y] == MapTile.Dirt && FindNeighbors(x, y, MapTile.Water) >= 4)
                 {
                     mapData[x][y] = MapTile.Water;
                 }
