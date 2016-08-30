@@ -32,6 +32,14 @@ public class GlobalBehaviour : MonoBehaviour
     public static GameObject CreateResource(string name, Vector3? position, Quaternion? rotation, Transform parent)
     {
         var prefab = Resources.Load("Tile_" + name, typeof(GameObject));
+
+        if (prefab == null)
+        {
+            Debug.LogWarning("Something about this project has been corrupted.");
+            Debug.LogError("Unable to load: Prefabs/Map/Resources/Tile_" + name);
+            return null;
+        }
+
         GameObject go = Instantiate(prefab, position ?? Vector3.zero, rotation ?? Quaternion.identity) as GameObject;
         go.transform.parent = parent;
         go.name = prefab.name;
