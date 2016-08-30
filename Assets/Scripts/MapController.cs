@@ -32,10 +32,10 @@ public class MapController : GlobalBehaviour
     
     public bool IsInMapBounds(Vector3 position)
     {
-        if (position.x > 0 + 3f &&
-            position.x < XSize - 3f &&
-            position.z > 0 + 3f &&
-            position.z < YSize - 3f)
+        if (position.x > 1 &&
+            position.x < XSize &&
+            position.z > 1 &&
+            position.z < YSize)
         {
             return true;
         }
@@ -45,7 +45,7 @@ public class MapController : GlobalBehaviour
 
     public bool IsValidPosition(Vector3 position)
     {
-        Collider[] col = Physics.OverlapSphere(position, .5f);
+        Collider[] col = Physics.OverlapSphere(position + (Vector3.up * .5f), 1f);
         return col.Length == 0;
     }
 
@@ -59,9 +59,9 @@ public class MapController : GlobalBehaviour
     {
         while (true)
         {
-            Vector3 point = new Vector3(Random.Range(0 + offset, XSize - offset),
+            Vector3 point = new Vector3(Random.Range(offset + 1, XSize - offset),
                                         .1f,
-                                        Random.Range(0 + offset, YSize - offset));
+                                        Random.Range(offset + 1, YSize - offset));
 
             if (IsInMapBounds(point) && IsValidPosition(point))
             {
@@ -96,41 +96,25 @@ public class MapController : GlobalBehaviour
     private void Generate()
     {
         // Initialize the map array
-        mapData = new MapTile[XSize][];
-        for (int i = 0; i < XSize; i++)
+        mapData = new MapTile[XSize + 2][];
+        for (int i = 0; i < XSize + 2; i++)
         {
-            mapData[i] = new MapTile[YSize];
+            mapData[i] = new MapTile[YSize + 2];
         }
         
-        // Place lake near middle
-        int originX = Random.Range(20, XSize - 20);
-        int originY = Random.Range(20, YSize - 20);
-        int width = Random.Range(5, 13);
-        int height = Random.Range(5, 13);
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                if (x < 1 || x > width - 1 ||
-                    y < 1 || y > height - 1)
-                {
-                    // Randomly (40% of the time), don't draw the lake's outer edges
-                    if (Random.value > .6f)
-                    {
-                        continue;
-                    }
-                }
-
-                mapData[originX + x][originY + y] = MapTile.Water;
-            }
-        }
+        // Generate three water bodies and fill them
+        GenerateLake(Random.Range(5, XSize - 5), Random.Range(5, YSize - 5));
+        GenerateLake(Random.Range(5, XSize - 5), Random.Range(5, YSize - 5));
+        GenerateLake(Random.Range(5, XSize - 5), Random.Range(5, YSize - 5));
+        FillInLakes();
+        FillInLakes();
 
         // Draw at random, each tree for all trees
         int trees = Random.Range(11, 18);
         for (int i = 0; i < trees; i++)
         {
-            int x = Random.Range(1, XSize - 1);
-            int y = Random.Range(1, YSize - 1);
+            int x = Random.Range(2, XSize - 3);
+            int y = Random.Range(2, YSize - 3);
 
             if (mapData[x][y] != MapTile.Dirt)
             {
@@ -144,8 +128,8 @@ public class MapController : GlobalBehaviour
             int bushes = Random.Range(0, 3);
             for (int j = 0; j < bushes; j++)
             {
-                x = Mathf.Clamp(Random.Range(x - 2, x + 2), 1, XSize - 1);
-                y = Mathf.Clamp(Random.Range(y - 2, y + 2), 1, YSize - 1);
+                x = Mathf.Clamp(Random.Range(x - 2, x + 2), 2, XSize - 3);
+                y = Mathf.Clamp(Random.Range(y - 2, y + 2), 2, YSize - 3);
 
                 if (mapData[x][y] != MapTile.Dirt)
                 {
@@ -156,13 +140,13 @@ public class MapController : GlobalBehaviour
                 mapData[x][y] = MapTile.Bush;
             }
         }
-        
+
         DrawBorder();
-        
+
         // Draw the structure and shape of the map
-        for (int y = 0; y < YSize; y++)
+        for (int y = 0; y < YSize + 2; y++)
         {
-            for (int x = 0; x < XSize; x++)
+            for (int x = 0; x < XSize + 2; x++)
             {
                 Vector3 location = new Vector3(x, 0, y);
 
@@ -213,7 +197,7 @@ public class MapController : GlobalBehaviour
                         }
                         break;
                     case MapTile.Wall:
-                        CreateResource("Wall", location, transform);
+                        CreateResource("Wall", location + Vector3.down, transform);
                         break;
                 }
             }
@@ -239,14 +223,97 @@ public class MapController : GlobalBehaviour
     private void DrawBorder()
     {
         // Draw horizontal borders
-        DrawLineHorizontal(0, 0, XSize);
-        DrawLineHorizontal(0, YSize - 1, XSize);
+        DrawLineHorizontal(0, 0, XSize + 2);
+        DrawLineHorizontal(0, YSize + 1, XSize + 2);
 
         // Draw vertical borders
-        DrawLineVertical(0, 0, YSize);
-        DrawLineVertical(XSize - 1, 0, YSize);
+        DrawLineVertical(0, 0, YSize + 2);
+        DrawLineVertical(XSize + 1, 0, YSize + 2);
     }
     
+    private void GenerateLake(int originX, int originY)
+    {
+        int x = 0;
+        int y = 0;
+        int count = 0;
+        int lastDir = 0;
+        while (count < 50)
+        {
+            int dir = Random.Range(0, 4);
+
+            // If we generated a wrong direction, try again.
+            if (lastDir == 0 && dir == 3 ||
+                lastDir == 1 && dir == 2 ||
+                lastDir == 2 && dir == 1 ||
+                lastDir == 3 && dir == 0)
+            {
+                continue;
+            }
+
+            if (dir == 0)
+            {
+                y += 1;
+            }
+            else if (dir == 1)
+            {
+                x += 1;
+            }
+            else if (dir == 2)
+            {
+                x -= 1;
+            }
+            else if (dir == 3)
+            {
+                y -= 1;
+            }
+
+            if (originX + x < 0 || originY + y < 0 || originX + x > XSize - 1 || originY + y > YSize - 1)
+            {
+                return;
+            }
+
+            if (mapData[originX + x][originY + y] != MapTile.Dirt)
+            {
+                continue;
+            }
+
+            mapData[originX + x][originY + y] = MapTile.Water;
+        }
+    }
+
+    private int FindNeighbors(int x, int y, MapTile tile)
+    {
+        int neighbors = 0;
+
+        if (mapData[x - 1][y - 1] == tile) neighbors++;
+        if (mapData[x - 1][y] == tile) neighbors++;
+        if (mapData[x - 1][y + 1] == tile) neighbors++;
+
+        if (mapData[x][y - 1] == tile) neighbors++;
+        if (mapData[x][y + 1] == tile) neighbors++;
+
+        if (mapData[x + 1][y - 1] == tile) neighbors++;
+        if (mapData[x + 1][y] == tile) neighbors++;
+        if (mapData[x + 1][y + 1] == tile) neighbors++;
+
+        return neighbors;
+    }
+
+    private void FillInLakes()
+    {
+        for (int y = 1; y < YSize; ++y)
+        {
+            for (int x = 1; x < XSize; ++x)
+            {
+                // Fill in dirt islands with water
+                if (mapData[x][y] == MapTile.Dirt && FindNeighbors(x, y, MapTile.Water) > 3)
+                {
+                    mapData[x][y] = MapTile.Water;
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// adds walls in a horizontal line
     /// </summary>
