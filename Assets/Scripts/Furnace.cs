@@ -58,9 +58,8 @@ public class Furnace : MonoBehaviour
             if (Contents[i].Cooked > 240)
             {
                 string name = Contents[i].Item.Name.Split('(')[0].TrimEnd(' ');
-                GetComponent<Provider>().DropEntries.Add(new Provider.DropEntry(name + " (Cooked)", 1, 1));
-                GameObject.Find("Control Objects").GetComponent<ActivityLog>().Append($"{name} has finished cooking.", "cyan");
-
+                
+                GetComponent<Provider>().Add(name + " (Cooked)", 1, 1);
                 Contents.RemoveAt(i);
                 i--;
             }

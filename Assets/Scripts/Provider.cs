@@ -50,6 +50,19 @@ public class Provider : MonoBehaviour
     /// </summary>
     public GameObject OnDestroyReplace = null;
 
+    public void Add(string name, int stock, int use)
+    {
+        for (int i = 0; i < DropEntries.Count; i++)
+        {
+            if (DropEntries[i].ItemName == name)
+            {
+                DropEntries[i].ItemStock += stock;
+                return;
+            }
+        }
+        DropEntries.Add(new DropEntry(name, stock, use));
+    }
+
     public DropEntry GetDrop()
     {
         var randomlyOrdered = DropEntries.OrderBy(i => Random.value);
