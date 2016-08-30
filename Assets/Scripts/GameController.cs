@@ -15,7 +15,7 @@ public class GameController : GlobalBehaviour
     /// <summary>
     /// list of players with a color to be created at the start of the game
     /// </summary>
-    private static string[] heroic =
+    private static readonly string[] heroic =
     {
         "AngryAlbino",
         "deccer",
@@ -33,10 +33,27 @@ public class GameController : GlobalBehaviour
         "vassvik",
     };
 
+    private static readonly float[] Hues = {
+        .09f,
+        .00f,
+        .16f,
+        .25f,
+        .80f,
+        .63f,
+        .50f,
+        .90f,
+        .40f,
+        .58f,
+        .02f,
+        .54f,
+        .54f,
+        .58f
+    };
+
     /// <summary>
     /// list of NPCs to be created at the start of the game
     /// </summary>
-    private static string[] population =
+    private static readonly string[] population =
     {
         "b4u7",
         "Big Hoss",
@@ -56,6 +73,8 @@ public class GameController : GlobalBehaviour
         "WildNoob",
     };
 
+    private GameObject agentContainer;
+
     private float timeSinceLastEvent;
 
     #region Unity
@@ -72,72 +91,6 @@ public class GameController : GlobalBehaviour
     private void Start()
     {
         StartCoroutine("CreateAgents");
-    }
-
-    private GameObject agentContainer;
-
-    private static readonly float[] Hues = {
-        .09f,
-        .00f,
-        .16f,
-        .25f,
-        .80f,
-        .63f,
-        .50f,
-        .90f,
-        .40f,
-        .58f,
-        .02f,
-        .54f,
-        .54f,
-        .58f
-    };
-    private IEnumerator CreateAgents()
-    {
-        agentContainer = new GameObject("Agents");
-        
-        // Create heroic characters (Players) with a colour
-        for (int i = heroic.Length - 1; i >= 0; i--)
-        {
-            CreateAgent(heroic[i], new HSBColor(Hues[i], .75f, .75f, 1f).ToColor());
-            yield return new WaitForSeconds(.1f);
-        }
-        
-        // Create NPCs without a colour for now
-        // TODO(Albino) Find a way to make unique colours so I don't have to have two classes of people
-        var pop = population.OrderByDescending(x => x.Length);
-        foreach (string name in pop)
-        {
-            CreateAgent(name, Color.gray);
-            yield return new WaitForSeconds(.05f);
-        }
-        
-        yield return new WaitForSeconds(.1f);
-
-        Time.timeScale = 3f;
-        log.Append($"{map.Agents.Count} Agents created, Simulating Economy...", "green");
-        yield return null;
-    }
-
-    private void CreateAgent(string name, Color color)
-    {
-        GameObject go = Agent.Create(name);
-        Agent agent = go.GetComponent<Agent>();
-        go.transform.parent = agentContainer.transform;
-
-        // Position Agents randomly on the map
-        go.transform.position = map.GetRandomPoint();
-
-        // Give them a fair amount of resources
-        agent.inventory.Add("Bread", Random.Range(10, 10));
-        agent.inventory.Add("Water", Random.Range(10, 10));
-
-        // Generate a random color for this agent
-        // TODO(Albino) should be visually unique from all previous colors
-        agent.color = color;
-
-        players.Add(agent);
-        map.Agents.Add(agent);
     }
 
     private void FixedUpdate()
@@ -184,6 +137,54 @@ public class GameController : GlobalBehaviour
         }
     }
     #endregion
+
+    private IEnumerator CreateAgents()
+    {
+        agentContainer = new GameObject("Agents");
+
+        // Create heroic characters (Players) with a colour
+        for (int i = heroic.Length - 1; i >= 0; i--)
+        {
+            CreateAgent(heroic[i], new HSBColor(Hues[i], .75f, .75f, 1f).ToColor());
+            yield return new WaitForSeconds(.1f);
+        }
+
+        // Create NPCs without a colour for now
+        // TODO(Albino) Find a way to make unique colours so I don't have to have two classes of people
+        var pop = population.OrderByDescending(x => x.Length);
+        foreach (string name in pop)
+        {
+            CreateAgent(name, Color.gray);
+            yield return new WaitForSeconds(.05f);
+        }
+
+        yield return new WaitForSeconds(.1f);
+
+        Time.timeScale = 3f;
+        log.Append($"{map.Agents.Count} Agents created, Simulating Economy...", "green");
+        yield return null;
+    }
+
+    private void CreateAgent(string name, Color color)
+    {
+        GameObject go = Agent.Create(name);
+        Agent agent = go.GetComponent<Agent>();
+        go.transform.parent = agentContainer.transform;
+
+        // Position Agents randomly on the map
+        go.transform.position = map.GetRandomPoint();
+
+        // Give them a fair amount of resources
+        agent.inventory.Add("Bread", Random.Range(10, 10));
+        agent.inventory.Add("Water", Random.Range(10, 10));
+
+        // Generate a random color for this agent
+        // TODO(Albino) should be visually unique from all previous colors
+        agent.color = color;
+
+        players.Add(agent);
+        map.Agents.Add(agent);
+    }
 
     private void MapEventGrowth()
     {
