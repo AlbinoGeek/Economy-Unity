@@ -29,7 +29,7 @@ public struct TradeOffer
         get
         {
             var self = this;
-            return SellEntries.Sum(x => x.Value * (self.Seller.inventory.Count(self.BuyEntry.ItemName) / Mathf.Max(self.Buyer.inventory.Count(self.BuyEntry.ItemName), .1f)));
+            return SellEntries.Sum(x => x.Quantity * x.Value * (self.Seller.inventory.Count(x.ItemName) / Mathf.Max(self.Buyer.inventory.Count(x.ItemName), .5f)));
         }
     }
 
@@ -39,7 +39,7 @@ public struct TradeOffer
         {
             if (SellEntries[i].ItemName == itemName)
             {
-                SellEntries[i].Increase();
+                SellEntries[i].Add(quantity);
                 return;
             }
         }
@@ -78,25 +78,32 @@ public struct TradeOffer
     }
 }
 
-public struct TradeOfferItem
+public class TradeOfferItem
 {
+    public TradeOfferItem() {}
+
     public TradeOfferItem(Item item, int quantity)
+    {
+        Quantity = quantity;
+        CloneFrom(item);
+    }
+
+    public void CloneFrom(Item item)
     {
         ItemId = item.Id;
         ItemName = item.Name;
-        Quantity = quantity;
         Weight = item.Weight;
         Value = item.Value;
     }
     
-    public int ItemId;
-    public string ItemName;
-    public int Quantity;
-    public float Weight;
-    public int Value;
+    public int ItemId { get; private set; }
+    public string ItemName { get; private set; }
+    public int Quantity { get; private set; }
+    public float Weight { get; private set; }
+    public int Value { get; private set; }
 
-    public void Increase()
+    public void Add(int amount)
     {
-        Quantity++;
+        Quantity += amount;
     }
 }

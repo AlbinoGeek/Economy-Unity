@@ -14,14 +14,6 @@ using UnityEngine;
 public class Agent : GlobalBehaviour
 {
     private static string[] foods = { "Berry", "Bread", "Apple", "Coconut", "Mango", "Fish (Cooked)" };
-    private static string[] tradable = {
-        "Bread", "Berry", "Apple", "Coconut", "Mango", "Water",
-        ////"Log",
-        "Plank", "Leaf", "Stick",
-        "Stone (Flat)", "Stone (Round)",
-        "Fish (Raw)", "Fish (Cooked)",
-        //// "Knife", "Stone (Chipped)",
-    };
     private static string[] cookable =
     {
         "Fish (Raw)",
@@ -530,13 +522,12 @@ public class Agent : GlobalBehaviour
             Agent other = nearbyAgents.ElementAt(i);
 
             // Try to find an item we want
-            Item theirs = other.inventory.Items.Where(x => tradable.Contains(x.Name))
-                                               .OrderBy(x => Random.value)
+            Item theirs = other.inventory.Items.OrderBy(x => System.Guid.NewGuid())
                                                .FirstOrDefault();
             
             if (theirs != null)
             {
-                // Don't trade away our last five Bread or Water
+                // Don't buy their last food or water
                 if (theirs.Quantity < 5 &&
                    (theirs.Name == "Bread" ||
                     theirs.Name == "Water"))
@@ -545,31 +536,25 @@ public class Agent : GlobalBehaviour
                 }
                 
                 // We don't want something we have too much of
-                if (inventory.Count(theirs.Name) > 5)
-                {
-                    continue;
-                }
-
-                float cost = theirs.Value;
-
-                // Add a modifier of supply vs demand
-                cost *= (theirs.Quantity / Mathf.Max(inventory.Count(theirs.Name), .1f));
-
-                // Charge between 20% and 200% based on this factor
-                cost = Mathf.Clamp(cost, theirs.Value * .2f, theirs.Value * 2.5f);
-
-                // Skip anything over 200% markup
-                if (cost > theirs.Value * 2f)
+                if (inventory.Count(theirs.Name) > 10)
                 {
                     continue;
                 }
                 
+                // Item Base Cost * appraised value modifier (Seller Supply vs Buyer Supply)
+                float cost = theirs.Value * (theirs.Quantity / Mathf.Max(inventory.Count(theirs.Name), .5f));
+
+                // Don't buy something that's over 200% marked up
+                if (cost > theirs.Value * 2f)
+                {
+                    continue;
+                }
+
                 TradeOffer trade = new TradeOffer(this, other);
                 trade.BuyEntry = new TradeOfferItem(theirs, 1);
-                    
-                // Add tradable items until we hit expected value
-                var myItems = inventory.Items.Where(x => tradable.Contains(x.Name));
-                foreach (Item item in myItems)
+                
+                // Add items until we hit expected value
+                foreach (Item item in inventory.Items)
                 {
                     // Don't trade the item we want
                     if (item.Name == theirs.Name)
@@ -583,14 +568,31 @@ public class Agent : GlobalBehaviour
                         continue;
                     }
 
+                    // Add items one by one until the value is acceptable
                     int trading = 0;
                     int total = item.Quantity;
-                    while (trade.Value <= cost && trading <= total)
+
+                    // Account for the special case that this is Food or Water
+                    // - We won't trade away our last 5 of these things
+                    if (item.Name == "Bread" || item.Name == "Water")
                     {
-                        trade.Add(item.Name, 1);
-                        trading++;
+                        total -= 5;
                     }
-                        
+                    
+                    if (total > 0)
+                    {
+                        while (trade.Value <= cost)
+                        {
+                            if (trading >= total)
+                            {
+                                break;
+                            }
+
+                            trade.Add(item.Name, 1);
+                            trading++;
+                        }
+                    }
+
                     // We can stop adding items
                     if (trade.Value >= cost)
                     {
@@ -598,7 +600,7 @@ public class Agent : GlobalBehaviour
                     }
                 }
 
-                if (trade.Value < cost || trade.SellEntries.Count == 0)
+                if (trade.Value <= cost || trade.SellEntries.Count == 0)
                 {
                     // We can't trade!
                     return count;
