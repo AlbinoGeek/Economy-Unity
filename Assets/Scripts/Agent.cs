@@ -150,7 +150,33 @@ public class Agent : GlobalBehaviour
         InvokeRepeating("Live", .1f, .1f);
     }
 
-    private string lastTrade = string.Empty;
+    private void FixedUpdate()
+    {
+        // Dead things don't consume resources
+        if (!Alive)
+        {
+            return;
+        }
+
+        // We lose health if we are losing calories or hydration
+        if (calories < 0 || hydration < 0)
+        {
+            health--;
+        }
+
+        // Consume standard resources
+        calories -= 6f * Time.fixedDeltaTime;
+        hydration -= 4f * Time.fixedDeltaTime;
+
+        // If we didn't take an action, move.
+        if (actionsTaken == 0 && LastActionTime - 3f < Time.timeSinceLevelLoad)
+        {
+            // Point us towards our destination
+            MoveTowardsDestination();
+        }
+    }
+    #endregion
+
     /// <summary>
     /// takes a step in the simulation
     /// </summary>
@@ -233,11 +259,11 @@ public class Agent : GlobalBehaviour
                 hydration += 200;
             }
         }
-        
+
         if (LastActionTime < Time.timeSinceLevelLoad)
         {
             Cook(totalfoods);
-            
+
             // Remove ourselves from the list
             var nearbyAgents = GetNeightbors(1);
             nearbyAgents = nearbyAgents.Where(agent => agent != this);
@@ -256,7 +282,7 @@ public class Agent : GlobalBehaviour
             {
                 var alive = nearbyAgents.Where(agent => agent.Alive);
                 actionsTaken += TradeWith(alive);
-                
+
                 if (actionsTaken > 0)
                 {
                     //move us towards the destination in question, if we're facing it.
@@ -269,40 +295,13 @@ public class Agent : GlobalBehaviour
                     actionsTaken += StealFrom(alive);
                 }
             }
-            
+
             if (actionsTaken > 0)
             {
                 LastActionTime = Time.timeSinceLevelLoad + (6 * actionsTaken);
             }
         }
     }
-
-    private void FixedUpdate()
-    {
-        // Dead things don't consume resources
-        if (!Alive)
-        {
-            return;
-        }
-
-        // We lose health if we are losing calories or hydration
-        if (calories < 0 || hydration < 0)
-        {
-            health--;
-        }
-
-        // Consume standard resources
-        calories -= 6f * Time.fixedDeltaTime;
-        hydration -= 4f * Time.fixedDeltaTime;
-
-        // If we didn't take an action, move.
-        if (actionsTaken == 0 && LastActionTime - 3f < Time.timeSinceLevelLoad)
-        {
-            // Point us towards our destination
-            MoveTowardsDestination();
-        }
-    }
-    #endregion
 
     private IEnumerable<Agent> GetNeightbors(float range)
     {
@@ -564,13 +563,7 @@ public class Agent : GlobalBehaviour
                 {
                     continue;
                 }
-
-                // Don't trade with the same person twice in a row
-                if (other.name == lastTrade)
-                {
-                    continue;
-                }
-
+                
                 TradeOffer trade = new TradeOffer(this, other);
                 trade.BuyEntry = new TradeOfferItem(theirs, 1);
                     
@@ -613,7 +606,6 @@ public class Agent : GlobalBehaviour
 
                 if (trade.Commit())
                 {
-                    lastTrade = other.name;
                     log.Append($"{name} bought 1x {trade.BuyEntry.ItemName} for {trade.ToString()} from {other.name}", "#9999FF");
 
                     count++;
