@@ -13,7 +13,7 @@ using UnityEngine;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class Agent : GlobalBehaviour
 {
-    private static string[] foods = { "Berry", "Bread", "Apple", "Coconut", "Mango" };
+    private static string[] foods = { "Berry", "Bread", "Apple", "Coconut", "Mango", "Fish (Cooked)" };
     private static string[] tradable = {
         "Bread", "Berry", "Apple", "Coconut", "Mango", "Water", 
         "Log", "Plank", "Leaf", "Stick",
@@ -324,7 +324,23 @@ public class Agent : GlobalBehaviour
 
             //move us towards the destination in question, if we're facing it.
             rigidbody.velocity += 5f * transform.TransformDirection(Vector3.forward * Time.fixedDeltaTime * MoveSpeed);
-            
+
+            // If there's something in front of us we can't travel on, strafe a bit
+            if (Physics.Raycast(new Ray(transform.position, transform.TransformDirection(Vector3.forward)), .5f))
+            {
+                // Try to go left
+                if (!Physics.Raycast(new Ray(transform.position, transform.TransformDirection(Vector3.left)), .5f))
+                {
+                    transform.position += transform.TransformDirection(Vector3.left) / 5f;
+                }
+
+                // Try to go right
+                if (!Physics.Raycast(new Ray(transform.position, transform.TransformDirection(Vector3.right)), .5f))
+                {
+                    transform.position += transform.TransformDirection(Vector3.right) / 5f;
+                }
+            }
+
             // Consume standard resources
             calories -= 6f * Time.fixedDeltaTime * rigidbody.velocity.magnitude;
             hydration -= 4f * Time.fixedDeltaTime * rigidbody.velocity.magnitude;
@@ -359,7 +375,7 @@ public class Agent : GlobalBehaviour
                     actionsTaken += 2;
 
                     // Consume a branch and create 1-2 sticks
-                    int count = Random.Range(1, 2);
+                    int count = Random.Range(1, 3);
                     inventory.Remove("Branch", 1);
                     inventory.Add("Stick", count);
                     log.Append($"{name} CRAFTED {count}x Sticks", "green");
