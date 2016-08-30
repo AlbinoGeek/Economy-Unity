@@ -15,13 +15,8 @@ public class Item
     {
         Item item = new Item(source.Name);
         item.Quantity = 1;
-        item.Value = source.Value;
-        item.Weight = source.Weight;
         return item;
     }
-
-    private static List<ItemBlueprint> Blueprints;
-    private static List<KeyValuePair<int, ItemAttribute>> BlueprintAttributes;
 
     public static ItemBlueprint GetBlueprint(string name)
     {
@@ -57,6 +52,9 @@ public class Item
         return blueprint;
     }
 
+    private static List<ItemBlueprint> Blueprints;
+    private static List<KeyValuePair<int, ItemAttribute>> BlueprintAttributes;
+    
     /// <summary>
     /// Initializes a new instance of the <see cref="Item" /> class and load from \ref ItemBlueprint. 
     /// </summary>
