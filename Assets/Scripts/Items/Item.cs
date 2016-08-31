@@ -11,6 +11,9 @@ using System.Linq;
 [System.Serializable]
 public class Item
 {
+    private static List<ItemBlueprint> blueprints = new List<ItemBlueprint>();
+    private static List<KeyValuePair<int, ItemAttribute>> blueprintAttributes = new List<KeyValuePair<int, ItemAttribute>>();
+
     public static Item Clone(Item source)
     {
         Item item = new Item(source.Name);
@@ -20,15 +23,8 @@ public class Item
 
     public static ItemBlueprint GetBlueprint(string name)
     {
-        // Prepare cache if it's missing
-        if (Blueprints == null)
-        {
-            Blueprints = new List<ItemBlueprint>();
-            BlueprintAttributes = new List<KeyValuePair<int, ItemAttribute>>();
-        }
-
         // First, check our cache
-        ItemBlueprint blueprint = Blueprints.Where(x => x.Name == name).FirstOrDefault();
+        ItemBlueprint blueprint = blueprints.Where(x => x.Name == name).FirstOrDefault();
 
         // Next, load it if we have to
         if (blueprint == null)
@@ -38,13 +34,13 @@ public class Item
             if (blueprint != null)
             {
                 // Add it to our cache
-                Blueprints.Add(blueprint);
+                blueprints.Add(blueprint);
 
                 // Optimization: Load our attributes once on load
                 var query = Database.GetConnection("Items.db").Table<ItemAttribute>().Where(x => x.ItemId == blueprint.Id);
                 foreach (var result in query)
                 {
-                    BlueprintAttributes.Add(new KeyValuePair<int, ItemAttribute>(blueprint.Id, result));
+                    blueprintAttributes.Add(new KeyValuePair<int, ItemAttribute>(blueprint.Id, result));
                 }
             }
         }
@@ -52,9 +48,6 @@ public class Item
         return blueprint;
     }
 
-    private static List<ItemBlueprint> Blueprints;
-    private static List<KeyValuePair<int, ItemAttribute>> BlueprintAttributes;
-    
     /// <summary>
     /// Initializes a new instance of the <see cref="Item" /> class and load from \ref ItemBlueprint. 
     /// </summary>
@@ -100,7 +93,7 @@ public class Item
 
     public string GetAttribute(string key)
     {
-        var list = BlueprintAttributes.Where(x => x.Key == Id);
+        var list = blueprintAttributes.Where(x => x.Key == Id);
         foreach (KeyValuePair<int, ItemAttribute> attribute in list)
         {
             if (attribute.Value.Key == key)
