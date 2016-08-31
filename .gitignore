@@ -30,3 +30,6 @@ sysinfo.txt
 
 # Generated Log files
 CSharp60Support/compilation.log
+
+# Generated history file from SuperCharger for Visual Studio
+global_history.dat
