@@ -3,7 +3,7 @@
 // </copyright>
 
 [System.Serializable]
-public struct FurnaceItem
+public class FurnaceItem
 {
     public FurnaceItem(Item item)
     {

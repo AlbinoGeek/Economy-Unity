@@ -2,7 +2,6 @@
 //     Copyright (c) Mewzor Holdings Inc. All rights reserved.
 // </copyright>
 using System.Collections;
-using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -12,43 +11,17 @@ using UnityEngine;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class GameController : GlobalBehaviour
 {
+    private static House[] Houses;
+
     /// <summary>
     /// list of players with a color to be created at the start of the game
     /// </summary>
     private static readonly string[] HeroicPopulation =
     {
-        "AngryAlbino",
-        "deccer",
-        "E.B.",
         "GoodGuyWill",
-        "JohnGeese",
         "Malscythe",
-        "matt",
-        "MewzorMewMew",
-        "Raiden",
         "RobbieW",
-        "StabbyGaming",
-        "Westermin",
-        "wubbalubbadubdub",
         "vassvik",
-    };
-
-    private static readonly float[] Hues =
-    {
-        .09f,
-        .00f,
-        .16f,
-        .25f,
-        .80f,
-        .63f,
-        .50f,
-        .90f,
-        .40f,
-        .58f,
-        .02f,
-        .54f,
-        .54f,
-        .58f
     };
 
     /// <summary>
@@ -59,9 +32,7 @@ public class GameController : GlobalBehaviour
         "b4u7",
         "Big Hoss",
         "divideddarko",
-        "HappyGiant",
         "HD",
-        "human_supremacist",
         "Le Chat",
         "Mirage",
         "Mobilpadde",
@@ -70,11 +41,10 @@ public class GameController : GlobalBehaviour
         "romgerman",
         "sean",
         "SadCloud123",
-        "Sense",
         "WildNoob",
     };
 
-    private GameObject agentContainer;
+    public static GameObject AgentContainer { get; private set; }
 
     private float timeSinceLastEvent;
 
@@ -109,7 +79,37 @@ public class GameController : GlobalBehaviour
     /// </summary>
     private void Start()
     {
-        StartCoroutine("CreateAgents");
+        AgentContainer = new GameObject("Agents");
+        Houses = new House[] {
+            //new House("The LightHouse", "E.B."),
+
+            new House(
+                new HSBColor(.08f, .7f, 1f, 1f),
+                "Quellar No'Quar", "deccer",
+                new string[] { "wubbalubbadubdub" }),
+
+            new House(
+                new HSBColor(.94f, .7f, 1f, 1f),
+                "Bravery minister", "Sense",
+                new string[] { "Westermin" }),
+
+            new House(
+                new HSBColor(0f, 0f, .85f, 1f),
+                "Atreides", "human_supremacist",
+                new string[] { "Leia", "Luke", "Han", "Chewie" }),
+
+            new House(
+                new HSBColor(.55f, .7f, 1f, 1f),
+                "The Horsemen", "matt",
+                new string[] { "Death", "striking", "Conquest", "War" }),
+
+            new House(
+                new HSBColor(.78f, .7f, 1f, 1f),
+                "", "AngryAlbino",
+                new string[] { "StabbyGaming", "MewzorMewMew", "JohnGeese", "Raiden", "HappyGiant" }),
+        };
+
+        StartCoroutine("CreateHouses");
     }
 
     private void FixedUpdate()
@@ -122,26 +122,26 @@ public class GameController : GlobalBehaviour
             switch (worldEvent)
             {
                 case EventType.Growth:
-                    log.Append("Nature is regrowing...", "lightblue");
+                    log.Append("Nature is regrowing...", "lightblue", LogEntry.MessageType.World);
                     MapEventGrowth();
                     break;
                 
                 case EventType.Flood:
-                    log.Append("It has started raining...", "lightblue");
+                    log.Append("It has started raining...", "lightblue", LogEntry.MessageType.World);
                     GameObject go = GameObject.Find("Tile_Water");
                     if (go)
                     {
                         Provider provider = go.GetComponent<Provider>();
 
                         // Replenish the primary stock of Water (Water)
-                        if (provider != null && provider.DropEntries.Count > 0)
+                        if (provider != null && provider.DropEntries.Count == 1)
                         {
-                            provider.DropEntries[0].Increase(3);
+                            provider.DropEntries[0].ItemStock += 3;
 
                             // If there is a second item, replenish some of it too
                             if (provider.DropEntries.Count == 2)
                             {
-                                provider.DropEntries[1].Increase(1);
+                                provider.DropEntries[1].ItemStock += 1;
                             }
                         }
                     }
@@ -151,59 +151,32 @@ public class GameController : GlobalBehaviour
                 case EventType.Fire:
                     go = CreateResource("Fire", map.GetRandomPoint(), Quaternion.identity);
                     map.Providers.Add(go.GetComponent<Provider>());
-                    log.Append($"A fire has broken out in the world!", "orange");
+                    log.Append($"A fire has broken out!", "orange", LogEntry.MessageType.World);
                     break;
             }
         }
     }
     #endregion
 
-    private IEnumerator CreateAgents()
+    private IEnumerator CreateHouses()
     {
-        agentContainer = new GameObject("Agents");
-
-        // Create heroic characters (Players) with a colour
-        for (int i = HeroicPopulation.Length - 1; i >= 0; i--)
+        // For each house, create all agents
+        for (int i = 0; i < Houses.Length; i++)
         {
-            CreateAgent(HeroicPopulation[i], new HSBColor(Hues[i], .75f, .75f, 1f).ToColor());
-            yield return new WaitForSeconds(.1f);
+            Houses[i].CreateAgents(map);
+            for (int j = Houses[i].Agents.Count; j > 0; j--)
+            {
+                players.Add(Houses[i].Agents[j - 1]);
+            }
+
+            log.Append($"House of {Houses[i].Name} has been founded by {Houses[i].Leader}", "green");
         }
 
-        // Create NPCs without a colour for now
-        // TODO(Albino) Find a way to make unique colours so I don't have to have two classes of people
-        var pop = RegularPopulation.OrderByDescending(x => x.Length);
-        foreach (string name in pop)
-        {
-            CreateAgent(name, Color.gray);
-            yield return new WaitForSeconds(.05f);
-        }
+        yield return new WaitForSeconds(.5f);
 
-        yield return new WaitForSeconds(.1f);
-
-        Time.timeScale = 3f;
         log.Append($"{map.Agents.Count} Agents created, Simulating Economy...", "green");
+        Time.timeScale = 3f;
         yield return null;
-    }
-
-    private void CreateAgent(string name, Color color)
-    {
-        GameObject go = Agent.Create(name);
-        Agent agent = go.GetComponent<Agent>();
-        go.transform.parent = agentContainer.transform;
-
-        // Position Agents randomly on the map
-        go.transform.position = map.GetRandomPoint();
-
-        // Give them a fair amount of resources
-        agent.inventory.Add("Bread", Random.Range(10, 10));
-        agent.inventory.Add("Water", Random.Range(10, 10));
-
-        // Generate a random color for this agent
-        // TODO(Albino) should be visually unique from all previous colors
-        agent.color = color;
-
-        players.Add(agent);
-        map.Agents.Add(agent);
     }
 
     private void MapEventGrowth()

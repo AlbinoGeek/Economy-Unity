@@ -23,7 +23,7 @@ public class Inventory
     {
         get
         {
-            return Items.Sum(x => x.Weight);
+            return Items.Sum(x => x.Weight * x.Quantity);
         }
     }
 

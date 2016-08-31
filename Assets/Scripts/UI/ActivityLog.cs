@@ -30,7 +30,16 @@ public class ActivityLog : MonoBehaviour
     /// <param name="entry">log to add</param>
     public void Append(LogEntry entry)
     {
-        entries.Add(entry);
+        if (entries.Count > 0 && entries[entries.Count - 1].Message == entry.Message)
+        {
+            entries[entries.Count - 1].Count += 1;
+            entries[entries.Count - 1].FinalTime = Time.timeSinceLevelLoad;
+        }
+        else
+        {
+            entries.Add(entry);
+        }
+
         UpdateLog();
     }
 
@@ -53,19 +62,18 @@ public class ActivityLog : MonoBehaviour
         Append(new LogEntry(message, color));
     }
 
+    public void Append(string message, string color, LogEntry.MessageType type)
+    {
+        Append(new LogEntry(message, color, type));
+    }
+
     private void UpdateLog()
     {
         int count = 0;
 
         List<int> picked = new List<int>();
-        for (int i = entries.Count - 1; i > 0; i--)
+        for (int i = entries.Count - 1; i >= 0; i--)
         {
-            // Skip CollectFrom
-            if (entries[i].Color == "#66CC66")
-            {
-                continue;
-            }
-
             picked.Add(i);
             count++;
 

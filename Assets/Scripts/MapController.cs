@@ -45,7 +45,7 @@ public class MapController : GlobalBehaviour
 
     public bool IsValidPosition(Vector3 position)
     {
-        Collider[] col = Physics.OverlapSphere(position + (Vector3.up * .5f), 1f);
+        Collider[] col = Physics.OverlapSphere(position + (Vector3.up * .4f), .75f);
         return col.Length == 0;
     }
 
@@ -101,13 +101,16 @@ public class MapController : GlobalBehaviour
         {
             mapData[i] = new MapTile[YSize + 2];
         }
-        
+
         // Generate three water bodies and fill them
-        GenerateLake(XSize / 2, 0);
-        GenerateLake(XSize / 2, 0);
-        GenerateLake(XSize / 2, 0);
+        GenerateLake(XSize / 2, YSize / 2);
+        GenerateLake(XSize / 2, YSize / 2);
+        GenerateLake(XSize / 2, YSize / 2);
+        GenerateLake(XSize / 2, YSize / 2);
         FillInLakes();
-        FillInLakes();
+
+        // Place the sun over the map
+        GameObject.Find("Sun").transform.position = new Vector3(XSize / 2, 15, YSize / 2);
 
         // Draw at random, each tree for all trees
         int trees = Random.Range(11, 18);
@@ -191,8 +194,8 @@ public class MapController : GlobalBehaviour
                     case MapTile.Dirt:
                         tile = CreateResource("Dirt", location + Vector3.down, transform);
                         
-                        // Also add rock (1%)
-                        if (Random.value < .01f)
+                        // Also add rock (.5%)
+                        if (Random.value < .005f)
                         {
                             tile = CreateResource("Stone", location + (Vector3.down * .5f), tile.transform);
                             provider = tile.AddComponent<Provider>();
@@ -217,7 +220,7 @@ public class MapController : GlobalBehaviour
         int chests = Random.Range(1, 2);
         for (int i = 0; i < chests; i++)
         {
-            GameObject go = CreateResource("Chest", GetRandomPoint(), transform);
+            GameObject go = CreateResource("Chest", GetRandomPoint(), Quaternion.Euler(0, 45, 0), transform);
             Provider provider = go.GetComponent<Provider>();
             provider.Add("Knife", 1, 1);
 
@@ -246,47 +249,37 @@ public class MapController : GlobalBehaviour
         int x = 0;
         int y = 0;
         int count = 0;
-        int lastDir = 0;
-        while (count < 30)
+        while (count < 100)
         {
             int dir = Random.Range(0, 4);
 
-            // If we generated a wrong direction, try again.
-            if (lastDir == 0 && dir == 3 ||
-                lastDir == 1 && dir == 2 ||
-                lastDir == 2 && dir == 1 ||
-                lastDir == 3 && dir == 0)
+            switch (dir)
             {
-                continue;
+                case 0:
+                    y += 1;
+                    break;
+                case 1:
+                    x += 1;
+                    break;
+                case 2:
+                    y -= 1;
+                    break;
+                case 3:
+                    x -= 1;
+                    break;
             }
 
-            if (dir == 0)
-            {
-                y += 1;
-            }
-            else if (dir == 1)
-            {
-                x += 1;
-            }
-            else if (dir == 2)
-            {
-                x -= 1;
-            }
-            else if (dir == 3)
-            {
-                y -= 1;
-            }
-
-            if (originX + x < 0 || originY + y < 0 || originX + x > XSize - 1 || originY + y > YSize - 1)
+            // Direction would take us off the map
+            if (originX + x < 0 ||
+                originY + y < 0 ||
+                originX + x > XSize ||
+                originY + y > YSize)
             {
                 return;
             }
 
-            if (mapData[originX + x][originY + y] != MapTile.Dirt)
-            {
-                continue;
-            }
-
+            count++;
+            
             mapData[originX + x][originY + y] = MapTile.Water;
         }
     }
@@ -295,12 +288,12 @@ public class MapController : GlobalBehaviour
     {
         int neighbors = 0;
 
-        //if (mapData[x - 1][y - 1] == tile) neighbors++;
+        if (mapData[x - 1][y - 1] == tile) neighbors++;
         if (mapData[x - 1][y] == tile) neighbors++;
         if (mapData[x - 1][y + 1] == tile) neighbors++;
 
         if (mapData[x][y - 1] == tile) neighbors++;
-        if (mapData[x][y] == tile) neighbors++;
+        //if (mapData[x][y] == tile) neighbors++;
         if (mapData[x][y + 1] == tile) neighbors++;
 
         if (mapData[x + 1][y - 1] == tile) neighbors++;
@@ -312,12 +305,12 @@ public class MapController : GlobalBehaviour
 
     private void FillInLakes()
     {
-        for (int y = 1; y < YSize; ++y)
+        for (int y = 1; y < YSize; y++)
         {
-            for (int x = 1; x < XSize; ++x)
+            for (int x = 1; x < XSize; x++)
             {
                 // Fill in dirt islands with water
-                if (mapData[x][y] == MapTile.Dirt && FindNeighbors(x, y, MapTile.Water) >= 4)
+                if (mapData[x][y] == MapTile.Dirt && FindNeighbors(x, y, MapTile.Water) >= 5)
                 {
                     mapData[x][y] = MapTile.Water;
                 }

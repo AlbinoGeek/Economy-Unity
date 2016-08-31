@@ -10,8 +10,12 @@ public class LogEntry
 {
     public enum MessageType
     {
-        Debug,
-        Info,
+        System,
+        World,
+        Trade,
+        Gather,
+        Combat,
+        Construction,
     }
 
     /// <summary>
@@ -34,22 +38,31 @@ public class LogEntry
         Color = color;
     }
 
+    public LogEntry(string message, string color, MessageType type) : this(message, color)
+    {
+        Type = type;
+    }
+
     /// <summary>
     /// Gets color to draw in
     /// </summary>
     public string Color { get; private set; } = "white";
+
+    public int Count { get; set; } = 1;
 
     /// <summary>
     /// Gets textual description
     /// </summary>
     public string Message { get; private set; } = string.Empty;
 
-    public MessageType Type { get; private set; } = MessageType.Info;
+    public MessageType Type { get; set; } = MessageType.System;
 
     /// <summary>
     /// Gets time entry was created
     /// </summary>
     public float Time { get; private set; }
+
+    public float FinalTime { get; set; }
 
     /// <summary>
     /// Gets textual representation of \ref Time
@@ -62,8 +75,23 @@ public class LogEntry
         }
     }
 
+    public string RangeStamp
+    {
+        get
+        {
+            return string.Format("[{0}-{1}]",
+                    string.Format("{0:0}", Time),
+                    string.Format("{0:0}", FinalTime));
+        }
+    }
+
     public override string ToString()
     {
-        return $"{TimeStamp}: {Message}";
+        if (Count > 1)
+        {
+            return $"{RangeStamp} {Type}: {Message} (x{Count} times)";
+        }
+
+        return $"{TimeStamp} {Type}: {Message}";
     }
 }

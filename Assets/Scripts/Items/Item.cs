@@ -104,4 +104,26 @@ public class Item
 
         return null;
     }
+
+    /// <summary>
+    /// TEMPORARY DATA stored about an item, such as Temperature, Wear, etc
+    /// </summary>
+    public Dictionary<string, int> KeyValueData { get; private set; } = new Dictionary<string, int>();
+
+    public int Temperature
+    {
+        get
+        {
+            int temperature;
+            if (!KeyValueData.TryGetValue("temperature", out temperature))
+            {
+                Temperature = temperature;
+            }
+            return temperature;
+        }
+        set
+        {
+            KeyValueData["temperature"] = value;
+        }
+    }
 }

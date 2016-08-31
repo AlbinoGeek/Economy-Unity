@@ -2,6 +2,7 @@
 //     Copyright (c) Mewzor Holdings Inc. All rights reserved.
 // </copyright>
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -29,22 +30,12 @@ public class Provider : MonoBehaviour
         /// <summary>
         /// how many items can be taken before depleted
         /// </summary>
-        public int ItemStock { get; private set; }
+        public int ItemStock { get; set; }
 
         /// <summary>
         /// how many items are collected per use
         /// </summary>
         public int StockPerUse { get; private set; }
-
-        public void Decrease(int amount)
-        {
-            ItemStock -= amount;
-        }
-
-        public void Increase(int amount)
-        {
-            ItemStock += amount;
-        }
     }
 
     public List<DropEntry> DropEntries = new List<DropEntry>();
@@ -52,7 +43,13 @@ public class Provider : MonoBehaviour
     /// <summary>
     /// destroy the parent object once we have been depleted
     /// </summary>
-    public bool DestroyOnEmpty = true;
+    public bool DestroyOnEmpty = false;
+
+    public bool ScaleWithContents = false;
+
+    private int currentDrops = 0;
+    private int totalDrops = 0;
+    private Vector3 originalScale;
 
     /// <summary>
     /// when destroying the parent object, replace it with this
@@ -65,10 +62,15 @@ public class Provider : MonoBehaviour
         {
             if (DropEntries[i].ItemName == name)
             {
-                DropEntries[i].Increase(stock);
+                DropEntries[i].ItemStock += stock;
+                totalDrops += stock;
+                currentDrops += stock;
                 return;
             }
         }
+
+        totalDrops += stock;
+        currentDrops += stock;
         DropEntries.Add(new DropEntry(name, stock, use));
     }
 
@@ -76,22 +78,31 @@ public class Provider : MonoBehaviour
     {
         for (int i = 0; i < DropEntries.Count; i++)
         {
-            if (DropEntries[i].ItemStock > 0)
-            {
-                DropEntries[i].Decrease(DropEntries[i].StockPerUse);
-                return DropEntries[i];
-            }
-            else
+            if (DropEntries[i].ItemStock <= 0)
             {
                 DropEntries.RemoveAt(i);
                 i--;
+                continue;
             }
+
+            currentDrops -= (DropEntries[i].StockPerUse > DropEntries[i].ItemStock ? DropEntries[i].StockPerUse : DropEntries[i].ItemStock);
+            return DropEntries[i];
         }
 
         return null;
     }
+    
+    private void Awake()
+    {
+        originalScale = transform.localScale;
+    }
 
-    private void FixedUpdate()
+    private void Start()
+    {
+        InvokeRepeating("CheckDead", 1f, .1f);
+    }
+
+    private void CheckDead()
     {
         if (DropEntries.Count == 0)
         {
@@ -99,6 +110,13 @@ public class Provider : MonoBehaviour
             {
                 DestroySelf();
             }
+        }
+        
+        if (ScaleWithContents)
+        {
+            Vector3 scale = transform.localScale;
+            scale.y = Mathf.Clamp(Mathf.Max(currentDrops, .1f) / totalDrops, 0f, 1f);
+            transform.localScale = scale;
         }
     }
     

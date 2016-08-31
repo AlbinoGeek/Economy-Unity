@@ -11,19 +11,14 @@ using UnityEngine;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1401:FieldsMustBePrivate", Justification = "Reviewed.  We want to have public methods.")]
 public class Furnace : MonoBehaviour
 {
-    public List<FurnaceItem> Contents = new List<FurnaceItem>();
+    public Inventory Inventory = new Inventory();
 
     public int Fuel = 100;
 
     public float LastFueledTime;
 
     private Provider provider;
-
-    public void Add(Item item)
-    {
-        Contents.Add(new FurnaceItem(item));
-    }
-
+    
     private void Awake()
     {
         provider = GetComponent<Provider>();
@@ -36,42 +31,38 @@ public class Furnace : MonoBehaviour
     {
         if (Fuel <= 0)
         {
-            if (LastFueledTime < Time.timeSinceLevelLoad - 30)
+            // Mark ourselves to destroy if we've been 60 seconds without fuel
+            if (LastFueledTime < Time.timeSinceLevelLoad - 60)
             {
                 GetComponent<Provider>().DestroyOnEmpty = true;
             }
-
-            return;
+        }
+        else
+        {
+            // A fueled fire doesn't peter out
+            LastFueledTime = Time.timeSinceLevelLoad;
+            Fuel--;
         }
 
-        // A fueled fire doesn't peter out
-        LastFueledTime = Time.timeSinceLevelLoad;
-
-        for (int i = 0; i < Contents.Count; i++)
+        for (int i = 0; i < Inventory.Items.Count; i++)
         {
-            if (Contents[i].Item == null)
+            if (Inventory.Items[i].Temperature > 200)
             {
+                string baseName = Inventory.Items[i].Name.Split('(')[0].TrimEnd(' ');
+                if (Inventory.Remove(baseName + " (Raw)", 1))
+                {
+                    provider.Add(baseName + " (Cooked)", 1, 1);
+                }
+
+                i--;
                 continue;
             }
-            
-            // It takes at least two rounds to cook
-            if (Contents[i].Cooked > 240)
+
+            if (Fuel > 0)
             {
-                string name = Contents[i].Item.Name.Split('(')[0].TrimEnd(' ');
-                
-                provider.Add(name + " (Cooked)", 1, 1);
-                Contents[i].Destroy();
-            }
-            else
-            {
-                Contents[i].Cook();
+                Inventory.Items[i].Temperature++;
                 Fuel--;
             }
-        }
-
-        if (Contents.Count == 0)
-        {
-            Fuel--;
         }
     }
 }
