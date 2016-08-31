@@ -19,6 +19,21 @@ public class Agent : GlobalBehaviour
         "Fish (Raw)",
     };
 
+    public enum Alignment
+    {
+        LawfulGood,
+        LawfulNeutral,
+        LawfulEvil,
+        NeutralGood,
+        Neutral,
+        NeutralEvil,
+        ChaoticGood,
+        ChaoticNeutral,
+        ChaoticEvil
+    }
+
+    private Alignment alignment;
+
     /// <summary>
     /// represents our forward moving speed, also decides how fast we consume resources
     /// </summary>
@@ -115,6 +130,7 @@ public class Agent : GlobalBehaviour
     protected override void Awake()
     {
         base.Awake();
+        alignment = (Alignment)Random.Range(0, 9);
         BirthTime = Time.timeSinceLevelLoad;
         
         if (Random.Range(0f, 1f) >= .5f)
@@ -202,20 +218,20 @@ public class Agent : GlobalBehaviour
         }
 
         // If we have met our destination, set a new one
-        if (Vector3.Distance(transform.position, Destination) < 1f)
+        if (Vector3.Distance(transform.position, Destination) < .75f)
         {
             while (true)
             {
-                Vector2 position = Random.insideUnitCircle * 10f;
+                Vector2 position = Random.insideUnitCircle * 1.5f;
                 Destination = new Vector3(position.x + transform.position.x, 0, position.y + transform.position.z);
 
-                if (map.IsInMapBounds(Destination))
+                if (map.IsInMapBounds(Destination) && map.IsValidPosition(Destination + (Vector3.up / 2f)))
                 {
                     break;
                 }
                 else
                 {
-                    var provider = map.Providers.Where(x => Vector3.Distance(x.transform.position, transform.position) < 3f).FirstOrDefault();
+                    var provider = map.Providers.Where(x => Vector3.Distance(x.transform.position, transform.position) < 2f).FirstOrDefault();
                     if (provider != null)
                     {
                         Destination = provider.transform.position;
@@ -278,7 +294,7 @@ public class Agent : GlobalBehaviour
                 if (actionsTaken > 0)
                 {
                     //move us towards the destination in question, if we're facing it.
-                    rigidbody.velocity += 10f * transform.TransformDirection(Vector3.forward * Time.fixedDeltaTime * MoveSpeed);
+                    rigidbody.velocity += 8f * transform.TransformDirection(Vector3.forward * Time.fixedDeltaTime * MoveSpeed);
                 }
 
                 // 4) If we are getting desperate, try to steal...
@@ -327,13 +343,19 @@ public class Agent : GlobalBehaviour
                 // Try to go left
                 if (!Physics.Raycast(new Ray(transform.position, transform.TransformDirection(Vector3.left)), .5f))
                 {
-                    transform.position += transform.TransformDirection(Vector3.left) / 5f;
+                    transform.position += transform.TransformDirection(Vector3.left) / 3f;
                 }
 
                 // Try to go right
-                if (!Physics.Raycast(new Ray(transform.position, transform.TransformDirection(Vector3.right)), .5f))
+                else if (!Physics.Raycast(new Ray(transform.position, transform.TransformDirection(Vector3.right)), .5f))
                 {
-                    transform.position += transform.TransformDirection(Vector3.right) / 5f;
+                    transform.position += transform.TransformDirection(Vector3.right) / 3f;
+                }
+
+                // Unstuck
+                else
+                {
+                    transform.position += transform.TransformDirection(Vector3.back) / 3f;
                 }
             }
 
@@ -668,13 +690,13 @@ public class Agent : GlobalBehaviour
         }
 
         //move us towards the destination in question, if we're facing it.
-        rigidbody.velocity += 20f * transform.TransformDirection(Vector3.forward * Time.fixedDeltaTime * MoveSpeed);
+        rigidbody.velocity += 10f * transform.TransformDirection(Vector3.forward * Time.fixedDeltaTime * MoveSpeed);
 
         return 1;
     }
 
     public override string ToString()
     {
-        return $"F: {inventory.Count("Berry") + inventory.Count("Bread")} | W: {inventory.Count("Water")} | {name}";
+        return $"{alignment} | F: {inventory.Count("Berry") + inventory.Count("Bread")} | W: {inventory.Count("Water")} | {name}";
     }
 }
