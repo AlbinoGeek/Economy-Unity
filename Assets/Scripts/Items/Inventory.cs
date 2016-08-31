@@ -11,6 +11,30 @@ using System.Linq;
 [System.Serializable]
 public class Inventory
 {
+    /// <summary>
+    /// Gets list of items we hold
+    /// </summary>
+    public List<Item> Items { get; private set; } = new List<Item>();
+
+    /// <summary>
+    /// Gets total mass of all items in the inventory
+    /// </summary>
+    public float Weight
+    {
+        get
+        {
+            return Items.Sum(x => x.Weight);
+        }
+    }
+
+    /// <summary>
+    /// moves an item between two inventories, splitting stacks where required
+    /// </summary>
+    /// <param name="from">sender of item</param>
+    /// <param name="to">recipient of item</param>
+    /// <param name="itemName">item to locate by name</param>
+    /// <param name="quantity">amount to transfer</param>
+    /// <returns>true if successful; false otherwise</returns>
     public static bool Transfer(Inventory from, Inventory to, string itemName, int quantity)
     {
         if (from.Count(itemName) > 0)
@@ -22,11 +46,6 @@ public class Inventory
 
         return false;
     }
-
-    /// <summary>
-    /// Gets list of items we hold
-    /// </summary>
-    public List<Item> Items { get; private set; } = new List<Item>();
 
     /// <summary>
     /// shortcut to add one by name
@@ -113,17 +132,10 @@ public class Inventory
         return false;
     }
     
-    public float Weight
-    {
-        get
-        {
-            return Items.Sum(x => x.Weight);
-        }
-    }
-
     /// <summary>
-    /// string representation
+    /// displays in a comma separated list, with quantities
     /// </summary>
+    /// <returns>string representation</returns>
     public override string ToString()
     {
         System.Text.StringBuilder builder = new System.Text.StringBuilder();
