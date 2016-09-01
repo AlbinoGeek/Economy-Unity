@@ -61,6 +61,7 @@ public class Item
         {
             // Throw an exception (corrupt database detected)
             UnityEngine.Debug.LogError(string.Format("Item with name {0} could not be found.", name));
+            return;
         }
 
         Id = blueprint.Id;
