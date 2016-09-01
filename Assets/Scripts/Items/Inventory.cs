@@ -83,8 +83,7 @@ public class Inventory
     /// <returns>amount found, or 0</returns>
     public int Count(string name)
     {
-        Item item = Find(name);
-        return item != null ? item.Quantity : 0;
+        return Find(name)?.Quantity ?? 0;
     }
 
     /// <summary>
